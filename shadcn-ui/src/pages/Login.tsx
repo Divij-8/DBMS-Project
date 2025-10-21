@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { storage } from '@/lib/storage';
+import { authService } from '@/lib/auth';
 import { toast } from 'sonner';
 
 interface LoginProps {
@@ -13,7 +13,7 @@ interface LoginProps {
 }
 
 const Login = ({ onAuthChange }: LoginProps) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -25,19 +25,30 @@ const Login = ({ onAuthChange }: LoginProps) => {
     setError('');
 
     try {
-      const user = storage.login(email, password);
-      if (user) {
+      const result = await authService.login(username, password);
+      if (result.success) {
         toast.success('Login successful!');
         onAuthChange();
         navigate('/dashboard');
       } else {
-        setError('Invalid email or password');
+        setError(result.message || 'Login failed');
       }
     } catch (err) {
       setError('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fillDemoCredentials = (user: 'farmer' | 'buyer' | 'admin') => {
+    const credentials = {
+      farmer: { username: 'farmer_test', password: 'TestPassword123!' },
+      buyer: { username: 'buyer_test', password: 'TestPassword123!' },
+      admin: { username: 'admin_test', password: 'AdminPassword123!' },
+    };
+    const creds = credentials[user];
+    setUsername(creds.username);
+    setPassword(creds.password);
   };
 
   return (
@@ -59,6 +70,7 @@ const Login = ({ onAuthChange }: LoginProps) => {
               Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
@@ -68,13 +80,13 @@ const Login = ({ onAuthChange }: LoginProps) => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  placeholder="Enter your username"
                   required
                 />
               </div>
@@ -107,12 +119,30 @@ const Login = ({ onAuthChange }: LoginProps) => {
               </div>
 
               <div className="mt-4 space-y-2">
-                <div className="text-sm text-gray-600">
-                  <strong>Farmer:</strong> demo@farmer.com / demo123
-                </div>
-                <div className="text-sm text-gray-600">
-                  <strong>Buyer:</strong> demo@buyer.com / demo123
-                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full text-sm"
+                  onClick={() => fillDemoCredentials('farmer')}
+                >
+                  👨‍🌾 Farmer Demo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full text-sm"
+                  onClick={() => fillDemoCredentials('buyer')}
+                >
+                  👩‍💼 Buyer Demo
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full text-sm"
+                  onClick={() => fillDemoCredentials('admin')}
+                >
+                  🔐 Admin Demo
+                </Button>
               </div>
             </div>
 
