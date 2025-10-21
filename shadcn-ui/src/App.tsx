@@ -10,7 +10,7 @@ import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Marketplace from './pages/Marketplace';
 import NotFound from './pages/NotFound';
-import { storage, User } from '@/lib/storage';
+import { authService, User } from '@/lib/auth';
 
 const queryClient = new QueryClient();
 
@@ -19,14 +19,24 @@ const App = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing user session
-    const user = storage.getCurrentUser();
-    setCurrentUser(user);
-    setIsLoading(false);
+    // Initialize auth service and check for existing session
+    const initAuth = async () => {
+      try {
+        await authService.initialize();
+        const user = await authService.getCurrentUser();
+        setCurrentUser(user);
+      } catch (error) {
+        console.error('Auth initialization error:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initAuth();
   }, []);
 
-  const handleAuthChange = () => {
-    const user = storage.getCurrentUser();
+  const handleAuthChange = async () => {
+    const user = await authService.getCurrentUser();
     setCurrentUser(user);
   };
 
