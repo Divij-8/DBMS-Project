@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { User, LogOut, Settings, Home, ShoppingCart, BarChart3 } from 'lucide-react';
-import { storage, User as UserType } from '@/lib/storage';
+import { authService, User as UserType } from '@/lib/auth';
+import { toast } from 'sonner';
 
 interface NavbarProps {
   user?: UserType | null;
@@ -14,8 +15,9 @@ interface NavbarProps {
 const Navbar = ({ user, onAuthChange }: NavbarProps) => {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    storage.logout();
+  const handleLogout = async () => {
+    await authService.logout();
+    toast.success('Logged out successfully');
     if (onAuthChange) {
       onAuthChange();
     }
@@ -57,7 +59,7 @@ const Navbar = ({ user, onAuthChange }: NavbarProps) => {
                     <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback>
-                          {user.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                          {user.username?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
                     </Button>
@@ -65,7 +67,7 @@ const Navbar = ({ user, onAuthChange }: NavbarProps) => {
                   <DropdownMenuContent className="w-56" align="end" forceMount>
                     <div className="flex items-center justify-start gap-2 p-2">
                       <div className="flex flex-col space-y-1 leading-none">
-                        <p className="font-medium">{user.name}</p>
+                        <p className="font-medium">{user.username}</p>
                         <p className="w-[200px] truncate text-sm text-muted-foreground">
                           {user.email}
                         </p>
