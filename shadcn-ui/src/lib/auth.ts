@@ -1,127 +1,142 @@
-import { databaseService } from './database';
-import { User } from './types';
+import { apiService } from './api';
 
-export class AuthService {
-  private currentUser: User | null = null;
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  name?: string;
+  role: 'farmer' | 'buyer' | 'admin';
+  phone?: string;
+  location?: string;
+  farm_size?: number;
+  profile_image?: string;
+  created_at?: string;
+}
 
+class AuthService {
   async initialize(): Promise<void> {
-    // Initialize database on first load
-    try {
-      await databaseService.initializeDatabase();
-      
-      // Check if user is logged in (from localStorage for session persistence)
-      const savedUser = localStorage.getItem('currentUser');
-      if (savedUser) {
-        this.currentUser = JSON.parse(savedUser);
+    // Initialize by checking if user has valid token
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      try {
+        apiService.setToken(token);
+        // Verify token is still valid
+        await this.getCurrentUser();
+      } catch (error) {
+        console.error('Token invalid, clearing auth');
+        this.logout();
       }
-    } catch (error) {
-      console.error('Failed to initialize auth service:', error);
-      // Fallback to localStorage mode if database is not available
-      this.initializeFallbackMode();
     }
-  }
-
-  private initializeFallbackMode(): void {
-    console.warn('Database not available, using localStorage fallback');
-    // Keep existing localStorage logic as fallback
   }
 
   async register(userData: {
+    username: string;
     email: string;
     password: string;
+    password2: string;
     role: 'farmer' | 'buyer';
-    name: string;
-    phone?: string;
-    address?: string;
-  }): Promise<{ success: boolean; message: string; user?: User }> {
+  }): Promise<{ success: boolean; message: string; user?: User; tokens?: any }> {
     try {
-      // Check if user already exists
-      const existingUser = await databaseService.getUserByEmail(userData.email);
-      if (existingUser) {
-        return { success: false, message: 'User with this email already exists' };
-      }
-
-      // Hash password (in production, use proper hashing like bcrypt)
-      const hashedPassword = await this.hashPassword(userData.password);
-
-      // Create user
-      const user = await databaseService.createUser({
-        ...userData,
-        password: hashedPassword
-      });
-
-      // Remove password from response
-      const { password, ...userWithoutPassword } = user;
+      const response = await apiService.register(userData);
       
-      return { 
-        success: true, 
-        message: 'Registration successful', 
-        user: userWithoutPassword as User 
+      if (response.tokens?.access) {
+        apiService.setToken(response.tokens.access);
+        localStorage.setItem('refresh_token', response.tokens.refresh);
+        localStorage.setItem('user', JSON.stringify(response.user));
+      }
+      return {
+        success: true,
+        message: 'Registration successful',
+        user: response.user,
+        tokens: response.tokens,
       };
-    } catch (error) {
-      console.error('Registration error:', error);
-      return { success: false, message: 'Registration failed. Please try again.' };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Registration failed',
+      };
     }
   }
 
-  async login(email: string, password: string): Promise<{ success: boolean; message: string; user?: User }> {
+  async login(username: string, password: string): Promise<{ success: boolean; message: string; user?: User }> {
     try {
-      const user = await databaseService.getUserByEmail(email);
-      
-      if (!user) {
-        return { success: false, message: 'Invalid email or password' };
+      const response = await apiService.login(username, password);
+      if (response.access) {
+        apiService.setToken(response.access);
+        localStorage.setItem('refresh_token', response.refresh);
+        
+        // If user data is in response, use it; otherwise fetch it
+        let user: User | null = null;
+        if (response.user) {
+          user = response.user;
+          localStorage.setItem('user', JSON.stringify(user));
+        } else {
+          user = await this.getCurrentUser();
+        }
+        
+        return {
+          success: true,
+          message: 'Login successful',
+          user: user || undefined,
+        };
       }
-
-      // Verify password (in production, use proper password verification)
-      const isValidPassword = await this.verifyPassword(password, user.password);
-      
-      if (!isValidPassword) {
-        return { success: false, message: 'Invalid email or password' };
-      }
-
-      // Set current user and save to localStorage for session persistence
-      const { password: _, ...userWithoutPassword } = user;
-      this.currentUser = userWithoutPassword as User;
-      localStorage.setItem('currentUser', JSON.stringify(this.currentUser));
-
-      return { 
-        success: true, 
-        message: 'Login successful', 
-        user: this.currentUser 
+      return {
+        success: false,
+        message: 'Invalid credentials',
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login error:', error);
-      return { success: false, message: 'Login failed. Please try again.' };
+      return {
+        success: false,
+        message: error.message || 'Login failed',
+      };
     }
   }
 
-  logout(): void {
-    this.currentUser = null;
-    localStorage.removeItem('currentUser');
+  async logout(): Promise<void> {
+    apiService.clearToken();
+    localStorage.removeItem('user');
   }
 
-  getCurrentUser(): User | null {
-    return this.currentUser;
+  async getCurrentUser(): Promise<User | null> {
+    try {
+      const user = await apiService.getCurrentUser();
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      return user;
+    } catch (error) {
+      console.error('Failed to get current user:', error);
+      return null;
+    }
+  }
+
+  async updateProfile(data: Partial<User>): Promise<{ success: boolean; message: string; user?: User }> {
+    try {
+      const user = await apiService.updateProfile(data);
+      if (user) {
+        localStorage.setItem('user', JSON.stringify(user));
+      }
+      return {
+        success: true,
+        message: 'Profile updated successfully',
+        user,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        message: error.message || 'Failed to update profile',
+      };
+    }
   }
 
   isAuthenticated(): boolean {
-    return this.currentUser !== null;
+    return !!localStorage.getItem('access_token');
   }
 
-  // Simple password hashing (use bcrypt in production)
-  private async hashPassword(password: string): Promise<string> {
-    // This is a simple hash for demo purposes
-    // In production, use bcrypt or similar
-    const encoder = new TextEncoder();
-    const data = encoder.encode(password + 'salt');
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  }
-
-  private async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
-    const hashedInput = await this.hashPassword(password);
-    return hashedInput === hashedPassword;
+  getStoredUser(): User | null {
+    const stored = localStorage.getItem('user');
+    return stored ? JSON.parse(stored) : null;
   }
 }
 
