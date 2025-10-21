@@ -40,6 +40,73 @@ export interface User {
     createdAt: string;
   }
   
+  export interface Equipment {
+    id: string;
+    ownerId: string;
+    ownerName: string;
+    name: string;
+    type: string;
+    description: string;
+    pricePerDay: number;
+    pricePerWeek: number;
+    location: string;
+    availability: boolean;
+    condition: 'excellent' | 'good' | 'fair';
+    specifications: string;
+    images?: string[];
+    createdAt: string;
+  }
+  
+  export interface EquipmentRental {
+    id: string;
+    equipmentId: string;
+    equipmentName: string;
+    renterId: string;
+    renterName: string;
+    ownerId: string;
+    ownerName: string;
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+    totalCost: number;
+    status: 'pending' | 'approved' | 'active' | 'completed' | 'cancelled';
+    createdAt: string;
+  }
+  
+  export interface GovernmentScheme {
+    id: string;
+    name: string;
+    description: string;
+    eligibility: string[];
+    benefits: string;
+    applicationProcess: string;
+    documents: string[];
+    deadline?: string;
+    category: 'subsidy' | 'loan' | 'insurance' | 'training' | 'equipment';
+    status: 'active' | 'inactive';
+  }
+  
+  export interface SchemeApplication {
+    id: string;
+    schemeId: string;
+    schemeName: string;
+    farmerId: string;
+    farmerName: string;
+    applicationData: {
+      farmSize: number;
+      cropType: string;
+      annualIncome: number;
+      landOwnership: 'owned' | 'leased';
+      documents: string[];
+      additionalInfo: string;
+    };
+    status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected';
+    submittedAt?: string;
+    reviewedAt?: string;
+    comments?: string;
+    createdAt: string;
+  }
+  
   class LocalStorage {
     private getItem<T>(key: string): T[] {
       const item = localStorage.getItem(key);
@@ -77,7 +144,7 @@ export interface User {
           name: 'Demo Farmer',
           role: 'farmer',
           phone: '+1234567890',
-          location: 'California, USA'
+          location: 'Maharashtra, India'
         };
         this.saveUser(user);
         return user;
@@ -90,7 +157,7 @@ export interface User {
           name: 'Demo Buyer',
           role: 'buyer',
           phone: '+0987654321',
-          location: 'New York, USA'
+          location: 'Delhi, India'
         };
         this.saveUser(user);
         return user;
@@ -152,12 +219,12 @@ export interface User {
             farmerId: '1',
             farmerName: 'Demo Farmer',
             name: 'Organic Tomatoes',
-            category: 'Vegetables',
-            price: 4.50,
+            category: 'vegetables',
+            price: 80,
             unit: 'kg',
             quantity: 100,
             description: 'Fresh organic tomatoes, vine-ripened',
-            location: 'California, USA',
+            location: 'Maharashtra, India',
             harvestDate: '2024-01-15',
             createdAt: '2024-01-15T10:00:00Z'
           },
@@ -166,12 +233,12 @@ export interface User {
             farmerId: '1',
             farmerName: 'Demo Farmer',
             name: 'Fresh Lettuce',
-            category: 'Vegetables',
-            price: 2.25,
+            category: 'vegetables',
+            price: 45,
             unit: 'heads',
             quantity: 50,
             description: 'Crisp romaine lettuce, pesticide-free',
-            location: 'California, USA',
+            location: 'Maharashtra, India',
             harvestDate: '2024-01-10',
             createdAt: '2024-01-10T08:00:00Z'
           }
@@ -229,7 +296,7 @@ export interface User {
             id: '1',
             farmerId: '1',
             name: 'Green Valley Farm',
-            location: 'Fresno, California',
+            location: 'Pune, Maharashtra',
             size: 25.5,
             soilType: 'Loamy',
             crops: ['Tomatoes', 'Lettuce', 'Carrots'],
@@ -254,6 +321,205 @@ export interface User {
         farms[index] = { ...farms[index], ...updates };
         this.setItem('farms', farms);
         return farms[index];
+      }
+      return null;
+    }
+  
+    // Equipment management
+    saveEquipment(equipment: Omit<Equipment, 'id' | 'createdAt'>): Equipment {
+      const equipments = this.getItem<Equipment>('equipments');
+      const newEquipment: Equipment = {
+        ...equipment,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      };
+      equipments.push(newEquipment);
+      this.setItem('equipments', equipments);
+      return newEquipment;
+    }
+  
+    getEquipments(): Equipment[] {
+      const stored = this.getItem<Equipment>('equipments');
+      if (stored.length === 0) {
+        // Initialize with demo data
+        const demoEquipments: Equipment[] = [
+          {
+            id: '1',
+            ownerId: '1',
+            ownerName: 'Demo Farmer',
+            name: 'John Deere 5050D Tractor',
+            type: 'tractor',
+            description: '50 HP tractor suitable for medium farming operations',
+            pricePerDay: 2500,
+            pricePerWeek: 15000,
+            location: 'Maharashtra, India',
+            availability: true,
+            condition: 'excellent',
+            specifications: '50 HP, 4WD, Power Steering',
+            createdAt: '2024-01-01T00:00:00Z'
+          },
+          {
+            id: '2',
+            ownerId: '1',
+            ownerName: 'Demo Farmer',
+            name: 'Combine Harvester',
+            type: 'harvester',
+            description: 'Modern combine harvester for wheat and rice',
+            pricePerDay: 5000,
+            pricePerWeek: 30000,
+            location: 'Maharashtra, India',
+            availability: true,
+            condition: 'good',
+            specifications: 'Self-propelled, 4m cutting width',
+            createdAt: '2024-01-01T00:00:00Z'
+          }
+        ];
+        this.setItem('equipments', demoEquipments);
+        return demoEquipments;
+      }
+      return stored;
+    }
+  
+    getEquipmentsByOwner(ownerId: string): Equipment[] {
+      return this.getEquipments().filter(e => e.ownerId === ownerId);
+    }
+  
+    updateEquipment(id: string, updates: Partial<Equipment>): Equipment | null {
+      const equipments = this.getItem<Equipment>('equipments');
+      const index = equipments.findIndex(e => e.id === id);
+      if (index >= 0) {
+        equipments[index] = { ...equipments[index], ...updates };
+        this.setItem('equipments', equipments);
+        return equipments[index];
+      }
+      return null;
+    }
+  
+    deleteEquipment(id: string): boolean {
+      const equipments = this.getItem<Equipment>('equipments');
+      const filteredEquipments = equipments.filter(e => e.id !== id);
+      if (filteredEquipments.length !== equipments.length) {
+        this.setItem('equipments', filteredEquipments);
+        return true;
+      }
+      return false;
+    }
+  
+    // Equipment rental management
+    saveRental(rental: Omit<EquipmentRental, 'id' | 'createdAt'>): EquipmentRental {
+      const rentals = this.getItem<EquipmentRental>('rentals');
+      const newRental: EquipmentRental = {
+        ...rental,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      };
+      rentals.push(newRental);
+      rentals.push(newRental);
+      this.setItem('rentals', rentals);
+      return newRental;
+    }
+  
+    getRentalsByRenter(renterId: string): EquipmentRental[] {
+      return this.getItem<EquipmentRental>('rentals').filter(r => r.renterId === renterId);
+    }
+  
+    getRentalsByOwner(ownerId: string): EquipmentRental[] {
+      return this.getItem<EquipmentRental>('rentals').filter(r => r.ownerId === ownerId);
+    }
+  
+    updateRental(id: string, updates: Partial<EquipmentRental>): EquipmentRental | null {
+      const rentals = this.getItem<EquipmentRental>('rentals');
+      const index = rentals.findIndex(r => r.id === id);
+      if (index >= 0) {
+        rentals[index] = { ...rentals[index], ...updates };
+        this.setItem('rentals', rentals);
+        return rentals[index];
+      }
+      return null;
+    }
+  
+    // Government schemes management
+    getGovernmentSchemes(): GovernmentScheme[] {
+      const stored = this.getItem<GovernmentScheme>('schemes');
+      if (stored.length === 0) {
+        // Initialize with demo schemes
+        const demoSchemes: GovernmentScheme[] = [
+          {
+            id: '1',
+            name: 'PM-KISAN Samman Nidhi',
+            description: 'Income support scheme providing ₹6000 per year to farmer families',
+            eligibility: ['Small and marginal farmers', 'Landholding up to 2 hectares', 'Valid Aadhaar card'],
+            benefits: '₹2000 per installment, 3 installments per year',
+            applicationProcess: 'Online application through PM-KISAN portal or CSC centers',
+            documents: ['Aadhaar Card', 'Land Records', 'Bank Account Details', 'Mobile Number'],
+            category: 'subsidy',
+            status: 'active'
+          },
+          {
+            id: '2',
+            name: 'Pradhan Mantri Fasal Bima Yojana',
+            description: 'Crop insurance scheme to protect farmers against crop loss',
+            eligibility: ['All farmers growing notified crops', 'Sharecroppers and tenant farmers eligible'],
+            benefits: 'Insurance coverage up to sum insured amount',
+            applicationProcess: 'Apply through banks, CSCs, or insurance companies',
+            documents: ['Aadhaar Card', 'Land Records', 'Sowing Certificate', 'Bank Account Details'],
+            deadline: '2024-12-31',
+            category: 'insurance',
+            status: 'active'
+          },
+          {
+            id: '3',
+            name: 'Sub-Mission on Agricultural Mechanization',
+            description: 'Financial assistance for purchase of agricultural machinery',
+            eligibility: ['Individual farmers', 'Self Help Groups', 'Cooperative societies'],
+            benefits: '40-50% subsidy on agricultural machinery',
+            applicationProcess: 'Apply through state agriculture department',
+            documents: ['Aadhaar Card', 'Land Records', 'Income Certificate', 'Bank Account Details'],
+            category: 'equipment',
+            status: 'active'
+          },
+          {
+            id: '4',
+            name: 'Kisan Credit Card Scheme',
+            description: 'Credit facility for farmers to meet agricultural expenses',
+            eligibility: ['All farmers including tenant farmers', 'Minimum age 18 years'],
+            benefits: 'Credit limit based on land holding and cropping pattern',
+            applicationProcess: 'Apply through banks and cooperative societies',
+            documents: ['Aadhaar Card', 'Land Records', 'Income Proof', 'Passport Size Photos'],
+            category: 'loan',
+            status: 'active'
+          }
+        ];
+        this.setItem('schemes', demoSchemes);
+        return demoSchemes;
+      }
+      return stored;
+    }
+  
+    // Scheme applications management
+    saveSchemeApplication(application: Omit<SchemeApplication, 'id' | 'createdAt'>): SchemeApplication {
+      const applications = this.getItem<SchemeApplication>('schemeApplications');
+      const newApplication: SchemeApplication = {
+        ...application,
+        id: Date.now().toString(),
+        createdAt: new Date().toISOString()
+      };
+      applications.push(newApplication);
+      this.setItem('schemeApplications', applications);
+      return newApplication;
+    }
+  
+    getSchemeApplicationsByFarmer(farmerId: string): SchemeApplication[] {
+      return this.getItem<SchemeApplication>('schemeApplications').filter(a => a.farmerId === farmerId);
+    }
+  
+    updateSchemeApplication(id: string, updates: Partial<SchemeApplication>): SchemeApplication | null {
+      const applications = this.getItem<SchemeApplication>('schemeApplications');
+      const index = applications.findIndex(a => a.id === id);
+      if (index >= 0) {
+        applications[index] = { ...applications[index], ...updates };
+        this.setItem('schemeApplications', applications);
+        return applications[index];
       }
       return null;
     }
