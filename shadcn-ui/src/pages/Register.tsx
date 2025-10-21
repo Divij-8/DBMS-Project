@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { storage, User } from '@/lib/storage';
+import { authService } from '@/lib/auth';
 import { toast } from 'sonner';
 
 interface RegisterProps {
@@ -15,13 +15,11 @@ interface RegisterProps {
 
 const Register = ({ onAuthChange }: RegisterProps) => {
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
-    confirmPassword: '',
+    password2: '',
     role: '' as 'farmer' | 'buyer' | '',
-    phone: '',
-    location: ''
   });
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
@@ -40,7 +38,7 @@ const Register = ({ onAuthChange }: RegisterProps) => {
     setError('');
 
     // Validation
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.password2) {
       setError('Passwords do not match');
       setIsLoading(false);
       return;
@@ -53,24 +51,23 @@ const Register = ({ onAuthChange }: RegisterProps) => {
     }
 
     try {
-      const userData: Omit<User, 'id'> = {
-        name: formData.name,
+      const result = await authService.register({
+        username: formData.username,
         email: formData.email,
+        password: formData.password,
+        password2: formData.password2,
         role: formData.role,
-        phone: formData.phone || undefined,
-        location: formData.location || undefined
-      };
+      });
 
-      const user = storage.register(userData);
-      toast.success('Registration successful!');
-      onAuthChange();
-      navigate('/dashboard');
-    } catch (err) {
-      if (err instanceof Error) {
-        setError(err.message);
+      if (result.success) {
+        toast.success('Registration successful!');
+        onAuthChange();
+        navigate('/dashboard');
       } else {
-        setError('Registration failed. Please try again.');
+        setError(result.message || 'Registration failed');
       }
+    } catch (err) {
+      setError('Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +84,6 @@ const Register = ({ onAuthChange }: RegisterProps) => {
             Join the agricultural community
           </p>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle>Get Started</CardTitle>
@@ -102,19 +98,17 @@ const Register = ({ onAuthChange }: RegisterProps) => {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
               <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
+                <Label htmlFor="username">Username</Label>
                 <Input
-                  id="name"
+                  id="username"
                   type="text"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  placeholder="Enter your full name"
+                  value={formData.username}
+                  onChange={(e) => handleInputChange('username', e.target.value)}
+                  placeholder="Enter your username"
                   required
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -126,7 +120,6 @@ const Register = ({ onAuthChange }: RegisterProps) => {
                   required
                 />
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="role">I am a</Label>
                 <Select value={formData.role} onValueChange={(value) => handleInputChange('role', value)}>
@@ -139,7 +132,6 @@ const Register = ({ onAuthChange }: RegisterProps) => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -151,46 +143,21 @@ const Register = ({ onAuthChange }: RegisterProps) => {
                   required
                 />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="password2">Confirm Password</Label>
                 <Input
-                  id="confirmPassword"
+                  id="password2"
                   type="password"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                  value={formData.password2}
+                  onChange={(e) => handleInputChange('password2', e.target.value)}
                   placeholder="Confirm your password"
                   required
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone">Phone (Optional)</Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="Enter your phone number"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="location">Location (Optional)</Label>
-                <Input
-                  id="location"
-                  type="text"
-                  value={formData.location}
-                  onChange={(e) => handleInputChange('location', e.target.value)}
-                  placeholder="Enter your location"
-                />
-              </div>
-
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
-
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
