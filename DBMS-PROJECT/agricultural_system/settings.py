@@ -1,6 +1,7 @@
 from pathlib import Path
 from datetime import timedelta
 from decouple import config
+import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -60,17 +61,9 @@ TEMPLATES = [
 WSGI_APPLICATION = 'agricultural_system.wsgi.application'
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': config('DB_NAME', default='agricultural_db'),
-        'USER': config('DB_USER', default='root'),
-        'PASSWORD': config('DB_PASSWORD', default='Bapsy_007'),
-        'HOST': config('DB_HOST', default='localhost'),
-        'PORT': config('DB_PORT', default='3306'),
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
-    }
+    'default': dj_database_url.config(
+        default=config('DATABASE_URL', default='mysql://root:Bapsy_007@localhost:3306/agricultural_db')
+    )
 }
 
 AUTH_PASSWORD_VALIDATORS = [
