@@ -9,8 +9,11 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Marketplace from './pages/Marketplace';
+import Checkout from './pages/Checkout';
+import OrderConfirmation from './pages/OrderConfirmation';
 import NotFound from './pages/NotFound';
 import { authService, User } from '@/lib/auth';
+import { CartProvider } from '@/hooks/use-cart';
 
 const queryClient = new QueryClient();
 
@@ -53,52 +56,68 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <BrowserRouter>
-          <div className="min-h-screen bg-gray-50">
-            <Navbar user={currentUser} onAuthChange={handleAuthChange} />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route 
-                path="/login" 
-                element={
-                  currentUser ? (
-                    <Navigate to="/dashboard" replace />
-                  ) : (
-                    <Login onAuthChange={handleAuthChange} />
-                  )
-                } 
-              />
-              <Route 
-                path="/register" 
-                element={
-                  currentUser ? (
-                    <Navigate to="/dashboard" replace />
-                  ) : (
-                    <Register onAuthChange={handleAuthChange} />
-                  )
-                } 
-              />
-              <Route 
-                path="/dashboard" 
-                element={
-                  currentUser ? (
-                    <Dashboard user={currentUser} />
-                  ) : (
-                    <Navigate to="/login" replace />
-                  )
-                } 
-              />
-              <Route 
-                path="/marketplace" 
-                element={<Marketplace user={currentUser} />} 
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </div>
-        </BrowserRouter>
-      </TooltipProvider>
+      <CartProvider>
+        <TooltipProvider>
+          <Toaster />
+          <BrowserRouter>
+            <div className="min-h-screen bg-gray-50">
+              <Navbar user={currentUser} onAuthChange={handleAuthChange} />
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route 
+                  path="/login" 
+                  element={
+                    currentUser ? (
+                      <Navigate to="/dashboard" replace />
+                    ) : (
+                      <Login onAuthChange={handleAuthChange} />
+                    )
+                  } 
+                />
+                <Route 
+                  path="/register" 
+                  element={
+                    currentUser ? (
+                      <Navigate to="/dashboard" replace />
+                    ) : (
+                      <Register onAuthChange={handleAuthChange} />
+                    )
+                  } 
+                />
+                <Route 
+                  path="/dashboard" 
+                  element={
+                    currentUser ? (
+                      <Dashboard user={currentUser} />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  } 
+                />
+                <Route 
+                  path="/marketplace" 
+                  element={<Marketplace user={currentUser} />} 
+                />
+                <Route 
+                  path="/checkout" 
+                  element={
+                    currentUser?.role === 'buyer' ? (
+                      <Checkout />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  } 
+                />
+                <Route 
+                  path="/order-confirmation" 
+                  element={<OrderConfirmation />} 
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </div>
+          </BrowserRouter>
+        </TooltipProvider>
+      </CartProvider>
     </QueryClientProvider>
   );
 };

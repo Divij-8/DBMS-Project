@@ -3,8 +3,11 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { User, LogOut, Settings, Home, ShoppingCart, BarChart3 } from 'lucide-react';
 import { authService, User as UserType } from '@/lib/auth';
+import { useCart } from '@/hooks/use-cart';
+import CartSidebar from '@/components/ui/CartSidebar';
 import { toast } from 'sonner';
 
 interface NavbarProps {
@@ -14,6 +17,8 @@ interface NavbarProps {
 
 const Navbar = ({ user, onAuthChange }: NavbarProps) => {
   const navigate = useNavigate();
+  const { getTotalItems } = useCart();
+  const totalItems = getTotalItems();
 
   const handleLogout = async () => {
     await authService.logout();
@@ -44,6 +49,23 @@ const Navbar = ({ user, onAuthChange }: NavbarProps) => {
                 <span>Marketplace</span>
               </Button>
             </Link>
+
+            {user?.role === 'buyer' && (
+              <CartSidebar>
+                <Button variant="ghost" className="flex items-center space-x-2 relative">
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Cart</span>
+                  {totalItems > 0 && (
+                    <Badge 
+                      variant="destructive" 
+                      className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
+                    >
+                      {totalItems}
+                    </Badge>
+                  )}
+                </Button>
+              </CartSidebar>
+            )}
 
             {user ? (
               <>

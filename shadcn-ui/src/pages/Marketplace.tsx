@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, Filter, MapPin, Calendar, Loader2 } from 'lucide-react';
+import { Search, Filter, MapPin, Calendar, Loader2, ShoppingCart } from 'lucide-react';
 import { apiService } from '@/lib/api';
 import { User } from '@/lib/auth';
+import { useCart } from '@/hooks/use-cart';
+import { toast } from 'sonner';
 
 interface Product {
   id: number;
@@ -36,6 +38,7 @@ const Marketplace = ({ user }: MarketplaceProps) => {
   const [sortBy, setSortBy] = useState('name');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const { addToCart } = useCart();
 
   useEffect(() => {
     fetchProducts();
@@ -93,6 +96,11 @@ const Marketplace = ({ user }: MarketplaceProps) => {
   }, [products, searchTerm, selectedCategory, sortBy]);
 
   const categories = ['all', ...new Set(products.map(p => p.category))];
+
+  const handleAddToCart = (product: Product) => {
+    addToCart(product);
+    toast.success(`${product.name} added to cart!`);
+  };
 
   if (loading) {
     return (
@@ -216,7 +224,7 @@ const Marketplace = ({ user }: MarketplaceProps) => {
                     Contact Farmer
                   </Button>
                   {user?.role === 'buyer' && (
-                    <Button variant="outline" className="w-full" size="sm">
+                    <Button variant="outline" className="w-full" size="sm" onClick={() => handleAddToCart(product)}>
                       Add to Cart
                     </Button>
                   )}
