@@ -27,10 +27,14 @@ const App = () => {
     const initAuth = async () => {
       try {
         await authService.initialize();
-        const user = await authService.getCurrentUser();
-        setCurrentUser(user);
+        // Only try to get current user if we have a token
+        if (authService.isAuthenticated()) {
+          const user = await authService.getCurrentUser();
+          setCurrentUser(user);
+        }
       } catch (error) {
         console.error('Auth initialization error:', error);
+        // Silently fail - user is just not logged in
       } finally {
         setIsLoading(false);
       }
