@@ -16,7 +16,7 @@ services:
   - type: web
     name: arms-frontend
     env: static
-    buildCommand: cd shadcn-ui && pnpm install && pnpm run build
+    buildCommand: cd shadcn-ui && pnpm install --no-frozen-lockfile && pnpm run build
     staticPublishPath: shadcn-ui/dist
     envVars:
       - key: VITE_API_URL
