@@ -12,11 +12,21 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    host: '0.0.0.0'
+    host: '0.0.0.0',
+    middlewareMode: false,
   },
   build: {
     outDir: 'dist',
     sourcemap: false,
-    minify: 'terser' // Re-enable terser now that it's installed
-  }
+    minify: 'terser',
+    rollupOptions: {
+      output: {
+        manualChunks: undefined,
+      },
+    },
+  },
+  preview: {
+    port: 5173,
+    host: '0.0.0.0',
+  },
 })
