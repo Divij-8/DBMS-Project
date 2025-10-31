@@ -9,6 +9,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Marketplace from './pages/Marketplace';
+import Equipment from './pages/Equipment';
 import Checkout from './pages/Checkout';
 import OrderConfirmation from './pages/OrderConfirmation';
 import NotFound from './pages/NotFound';
@@ -97,6 +98,10 @@ const App = () => {
                 <Route 
                   path="/marketplace" 
                   element={<Marketplace user={currentUser} />} 
+                />
+                <Route 
+                  path="/equipment" 
+                  element={currentUser?.role === 'farmer' ? <Equipment user={currentUser} /> : <Navigate to="/marketplace" replace />} 
                 />
                 <Route 
                   path="/checkout" 

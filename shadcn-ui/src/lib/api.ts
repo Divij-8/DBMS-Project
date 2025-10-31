@@ -96,6 +96,71 @@ class ApiService {
     return this.get('/products/my_products/');
   }
 
+  // Equipment endpoints
+  async getEquipment(filters?: { equipment_type?: string; status?: string }) {
+    let url = '/equipment/';
+    const params = new URLSearchParams();
+    if (filters?.equipment_type) params.append('equipment_type', filters.equipment_type);
+    if (filters?.status) params.append('status', filters.status);
+    if (params.toString()) url += `?${params.toString()}`;
+    return this.get(url);
+  }
+  async getEquipmentById(id: string) {
+    return this.get(`/equipment/${id}/`);
+  }
+  async createEquipment(data: any) {
+    return this.post('/equipment/', data);
+  }
+  async updateEquipment(id: string, data: any) {
+    return this.put(`/equipment/${id}/`, data);
+  }
+  async deleteEquipment(id: string) {
+    return this.delete(`/equipment/${id}/`);
+  }
+  async getMyEquipment() {
+    return this.get('/equipment/my_equipment/');
+  }
+  async getAvailableEquipment() {
+    return this.get('/equipment/available_equipment/');
+  }
+  async getEquipmentAvailableDates(id: string) {
+    return this.get(`/equipment/${id}/available_dates/`);
+  }
+
+  // Equipment Rental endpoints
+  async getEquipmentRentals(filters?: { status?: string; equipment?: string }) {
+    let url = '/equipment-rentals/';
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.equipment) params.append('equipment', filters.equipment);
+    if (params.toString()) url += `?${params.toString()}`;
+    return this.get(url);
+  }
+  async getEquipmentRentalById(id: string) {
+    return this.get(`/equipment-rentals/${id}/`);
+  }
+  async createEquipmentRental(data: any) {
+    return this.post('/equipment-rentals/', data);
+  }
+  async updateEquipmentRental(id: string, data: any) {
+    return this.put(`/equipment-rentals/${id}/`, data);
+  }
+  async getMyRentals() {
+    return this.get('/equipment-rentals/my_rentals/');
+  }
+  async getMyEquipmentRentals() {
+    return this.get('/equipment-rentals/my_equipment_rentals/');
+  }
+  async confirmRental(id: string) {
+    return this.post(`/equipment-rentals/${id}/confirm_rental/`, {});
+  }
+  async cancelRental(id: string) {
+    return this.post(`/equipment-rentals/${id}/cancel_rental/`, {});
+  }
+  async completeRental(id: string) {
+    return this.post(`/equipment-rentals/${id}/complete_rental/`, {});
+  }
+
   // Farm data endpoints
   async getFarmData() {
     return this.get('/farm-data/');
@@ -136,7 +201,22 @@ class ApiService {
   }
 
   // Generic methods
-  private async get(endpoint: string) {
+  async get(endpoint: string) {
+    return this._get(endpoint);
+  }
+  async post(endpoint: string, data: any) {
+    return this._post(endpoint, data);
+  }
+  async put(endpoint: string, data: any) {
+    return this._put(endpoint, data);
+  }
+  async patch(endpoint: string, data: any) {
+    return this._patch(endpoint, data);
+  }
+  async delete(endpoint: string) {
+    return this._delete(endpoint);
+  }
+  private async _get(endpoint: string) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'GET',
@@ -148,8 +228,7 @@ class ApiService {
       throw error;
     }
   }
-
-  private async post(endpoint: string, data: any) {
+  private async _post(endpoint: string, data: any) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
@@ -162,8 +241,7 @@ class ApiService {
       throw error;
     }
   }
-
-  private async put(endpoint: string, data: any) {
+  private async _put(endpoint: string, data: any) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'PUT',
@@ -176,8 +254,7 @@ class ApiService {
       throw error;
     }
   }
-
-  private async patch(endpoint: string, data: any) {
+  private async _patch(endpoint: string, data: any) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'PATCH',
@@ -190,8 +267,7 @@ class ApiService {
       throw error;
     }
   }
-
-  private async delete(endpoint: string) {
+  private async _delete(endpoint: string) {
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'DELETE',

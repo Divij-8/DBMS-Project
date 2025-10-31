@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { User, LogOut, Settings, Home, ShoppingCart, BarChart3 } from 'lucide-react';
+import { User, LogOut, Settings, Home, ShoppingCart, BarChart3, Wrench } from 'lucide-react';
 import { authService, User as UserType } from '@/lib/auth';
 import { useCart } from '@/hooks/use-cart';
 import CartSidebar from '@/components/ui/CartSidebar';
@@ -17,8 +17,10 @@ interface NavbarProps {
 
 const Navbar = ({ user, onAuthChange }: NavbarProps) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { getTotalItems } = useCart();
   const totalItems = getTotalItems();
+  const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
 
   const handleLogout = async () => {
     await authService.logout();
@@ -30,25 +32,36 @@ const Navbar = ({ user, onAuthChange }: NavbarProps) => {
   };
 
   return (
-    <nav className="bg-white shadow-sm border-b">
+    <nav className="bg-gradient-to-r from-white to-green-50 shadow-md border-b border-green-100 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
+            <Link to="/" className="flex items-center space-x-2 group">
+              <div className="w-8 h-8 bg-gradient-to-br from-green-600 to-emerald-600 rounded-lg flex items-center justify-center transform transition-transform duration-300 group-hover:scale-110 group-hover:shadow-lg">
                 <span className="text-white font-bold text-sm">AG</span>
               </div>
-              <span className="font-bold text-xl text-gray-900">ARMS</span>
+              <span className="font-bold text-xl text-gray-900 bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">ARMS</span>
             </Link>
           </div>
 
           <div className="flex items-center space-x-4">
-            <Link to="/marketplace">
-              <Button variant="ghost" className="flex items-center space-x-2">
-                <ShoppingCart className="w-4 h-4" />
-                <span>Marketplace</span>
-              </Button>
-            </Link>
+            {!isAuthPage && (
+              <Link to="/marketplace">
+                <Button variant="ghost" className="flex items-center space-x-2 transition-all duration-300 hover:bg-green-100 hover:text-green-700 transform hover:scale-105">
+                  <ShoppingCart className="w-4 h-4" />
+                  <span>Marketplace</span>
+                </Button>
+              </Link>
+            )}
+
+            {!isAuthPage && user?.role === 'farmer' && (
+              <Link to="/equipment">
+                <Button variant="ghost" className="flex items-center space-x-2 transition-all duration-300 hover:bg-orange-100 hover:text-orange-700 transform hover:scale-105">
+                  <Wrench className="w-4 h-4" />
+                  <span>Equipment</span>
+                </Button>
+              </Link>
+            )}
 
             {user?.role === 'buyer' && (
               <CartSidebar>

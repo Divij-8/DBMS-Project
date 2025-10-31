@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Sprout, Leaf, Tractor, Droplet, Wind, Sun } from 'lucide-react';
 import { authService } from '@/lib/auth';
 import { toast } from 'sonner';
 
@@ -52,8 +53,20 @@ const Login = ({ onAuthChange }: LoginProps) => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden" style={{
+      backgroundImage: 'url(/agriculture.jpg)',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed'
+    }}>
+      {/* Dark overlay for readability */}
+      <div className="absolute inset-0 bg-black/40"></div>
+      {/* Subtle Animated Background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+        <div className="absolute -top-40 -left-40 w-80 h-80 bg-green-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+        <div className="absolute -bottom-40 -right-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30"></div>
+      </div>
+      <div className="max-w-md w-full space-y-8 relative z-10">
         <div className="text-center">
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
             Sign in to your account

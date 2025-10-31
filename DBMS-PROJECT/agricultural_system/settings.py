@@ -76,7 +76,7 @@ else:
             'ENGINE': 'django.db.backends.mysql',
             'NAME': config('DB_NAME', default='agricultural_db'),
             'USER': config('DB_USER', default='root'),
-            'PASSWORD': config('DB_PASSWORD', default='Bapsy_007'),
+            'PASSWORD': config('DB_PASSWORD', default='mysql123'),
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='3306'),
         }
@@ -103,7 +103,7 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174', cast=lambda v: [s.strip() for s in v.split(',')])
+CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='http://localhost:5173,http://localhost:5174,http://127.0.0.1:5173,http://127.0.0.1:5174,http://10.231.8.163:5173,http://10.231.8.163:5174', cast=lambda v: [s.strip() for s in v.split(',')])
 CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {

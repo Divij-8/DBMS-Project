@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product
+from .models import Product, Equipment, EquipmentRental
 from users.serializers import UserSerializer
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -19,3 +19,55 @@ class ProductCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Product
         fields = ['name', 'description', 'category', 'price', 'unit', 'quantity', 'image', 'status', 'location', 'harvest_date']
+
+
+class EquipmentSerializer(serializers.ModelSerializer):
+    owner_id = serializers.ReadOnlyField(source='owner.id')
+    owner_name = serializers.ReadOnlyField(source='owner.username')
+    owner_phone = serializers.ReadOnlyField(source='owner.phone')
+    owner_location = serializers.ReadOnlyField(source='owner.location')
+    
+    class Meta:
+        model = Equipment
+        fields = ['id', 'name', 'description', 'equipment_type', 'specifications', 'daily_rate', 
+                  'weekly_rate', 'monthly_rate', 'security_deposit', 'image', 'status', 'location', 
+                  'condition', 'year_manufactured', 'brand', 'model', 'min_rental_days', 'max_rental_days',
+                  'delivery_available', 'delivery_radius_km', 'owner_id', 'owner_name', 'owner_phone', 
+                  'owner_location', 'created_at']
+        read_only_fields = ['id', 'owner_id', 'owner_name', 'owner_phone', 'owner_location', 'created_at']
+
+
+class EquipmentCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Equipment
+        fields = ['name', 'description', 'equipment_type', 'specifications', 'daily_rate', 
+                  'weekly_rate', 'monthly_rate', 'security_deposit', 'image', 'status', 'location', 
+                  'condition', 'year_manufactured', 'brand', 'model', 'min_rental_days', 'max_rental_days',
+                  'delivery_available', 'delivery_radius_km']
+
+
+class EquipmentRentalSerializer(serializers.ModelSerializer):
+    equipment_name = serializers.ReadOnlyField(source='equipment.name')
+    equipment_type = serializers.ReadOnlyField(source='equipment.equipment_type')
+    renter_name = serializers.ReadOnlyField(source='renter.username')
+    owner_name = serializers.ReadOnlyField(source='equipment.owner.username')
+    
+    class Meta:
+        model = EquipmentRental
+        fields = ['id', 'equipment', 'equipment_name', 'equipment_type', 'renter', 'renter_name', 
+                  'owner_name', 'start_date', 'end_date', 'rental_days', 'daily_rate', 'total_amount', 
+                  'security_deposit', 'delivery_required', 'delivery_address', 'special_instructions', 
+                  'status', 'payment_status', 'created_at']
+        read_only_fields = ['id', 'equipment_name', 'equipment_type', 'renter_name', 'owner_name', 'created_at']
+
+
+class EquipmentRentalCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = EquipmentRental
+        fields = ['equipment', 'start_date', 'end_date', 'rental_days', 'daily_rate', 'total_amount', 
+                  'security_deposit', 'delivery_required', 'delivery_address', 'special_instructions']
+    
+    def validate(self, data):
+        if data['end_date'] <= data['start_date']:
+            raise serializers.ValidationError('End date must be after start date')
+        return data
