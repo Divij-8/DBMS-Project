@@ -1,4 +1,10 @@
 services:
+  - type: pserv
+    name: arms-database
+    env: postgres
+    plan: free
+    version: 17
+
   - type: web
     name: arms-backend
     env: python
