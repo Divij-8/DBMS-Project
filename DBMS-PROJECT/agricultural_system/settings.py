@@ -76,14 +76,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'agricultural_system.wsgi.application'
 
 # Database configuration
-if config('DATABASE_URL', default=None) and dj_database_url:
+database_url = config('DATABASE_URL', default=None)
+
+if database_url and dj_database_url:
+    # Use Render's DATABASE_URL (for deployed environment)
     DATABASES = {
         'default': dj_database_url.config(
-            default=config('DATABASE_URL'),
-            conn_max_age=600
+            default=database_url,
+            conn_max_age=600,
+            conn_health_checks=True,
         )
     }
+    import logging
+    logging.getLogger(__name__).warning(f"Using DATABASE_URL from environment")
 elif config('USE_SQLITE', default=False, cast=bool):
+    # Use SQLite for local development
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -91,17 +98,26 @@ elif config('USE_SQLITE', default=False, cast=bool):
         }
     }
 else:
-    # Default to PostgreSQL
+    # Fallback to manual PostgreSQL configuration
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
             'NAME': config('DB_NAME', default='agricultural_db'),
             'USER': config('DB_USER', default='postgres'),
-            'PASSWORD': config('DB_PASSWORD', default='postgres'),
+            'PASSWORD': config('DB_PASSWORD', default=''),
             'HOST': config('DB_HOST', default='localhost'),
             'PORT': config('DB_PORT', default='5432'),
+            'CONN_MAX_AGE': 600,
+            'CONN_HEALTH_CHECKS': True,
         }
     }
+
+# Debug: Log which database is being used
+import logging
+logger = logging.getLogger(__name__)
+logger.warning(f"Database Engine: {DATABASES['default']['ENGINE']}")
+logger.warning(f"Database Host: {DATABASES['default'].get('HOST', 'N/A')}")
+logger.warning(f"DATABASE_URL env var exists: {bool(database_url)}")
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
