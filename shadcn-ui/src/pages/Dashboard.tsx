@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Edit2, Trash2, Package, TrendingUp, Users, DollarSign, Wrench, FileText, Calendar, MapPin, Phone } from 'lucide-react';
+import { Plus, Edit2, Trash2, Package, TrendingUp, Users, DollarSign, Wrench, FileText, Calendar, MapPin, Phone, ShoppingCart } from 'lucide-react';
 import { storage, Product, Farm, Equipment, EquipmentRental, GovernmentScheme, SchemeApplication } from '@/lib/storage';
 import { apiService } from '@/lib/api';
 import { User } from '@/lib/auth';
@@ -20,6 +21,7 @@ interface DashboardProps {
 }
 
 const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
@@ -134,11 +136,17 @@ const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
     }
   };
 
-  const loadBuyerData = () => {
-    const allProducts = storage.getProducts();
-    const allEquipments = storage.getEquipments();
-    setProducts(allProducts);
-    setEquipments(allEquipments);
+  const loadBuyerData = async () => {
+    try {
+      const response = await apiService.get('/products/');
+      const allProducts = Array.isArray(response) ? response : (response?.results || []);
+      setProducts(allProducts);
+      const allEquipments = storage.getEquipments();
+      setEquipments(allEquipments);
+    } catch (error) {
+      console.error('Failed to load products from API:', error);
+      setProducts([]);
+    }
   };
 
   const loadSchemes = () => {
@@ -1120,7 +1128,6 @@ const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
           <Tabs defaultValue="products" className="space-y-6">
             <TabsList>
               <TabsTrigger value="products">Products</TabsTrigger>
-              <TabsTrigger value="equipment">Equipment</TabsTrigger>
             </TabsList>
 
             <TabsContent value="products">
@@ -1144,48 +1151,13 @@ const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
                             <p><strong>Location:</strong> {product.location}</p>
                             <p><strong>Harvest:</strong> {new Date(product.harvestDate).toLocaleDateString()}</p>
                           </div>
-                          <Button className="w-full mt-4" size="sm">
-                            Contact Farmer
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            <TabsContent value="equipment">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Available Equipment</CardTitle>
-                  <CardDescription>Rent farming equipment from local farmers</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {equipments.filter(e => e.availability).map((equipment) => (
-                      <Card key={equipment.id}>
-                        <CardContent className="p-4">
-                          <h3 className="font-semibold mb-2">{equipment.name}</h3>
-                          <Badge variant="secondary" className="mb-2">{equipment.type}</Badge>
-                          <p className="text-sm text-gray-600 mb-2">{equipment.description}</p>
-                          <div className="space-y-1 text-sm">
-                            <p><strong>Owner:</strong> {equipment.ownerName}</p>
-                            <p><strong>Daily Rate:</strong> ₹{equipment.pricePerDay}</p>
-                            <p><strong>Weekly Rate:</strong> ₹{equipment.pricePerWeek}</p>
-                            <p><strong>Condition:</strong> {equipment.condition}</p>
-                            <div className="flex items-center">
-                              <MapPin className="h-3 w-3 mr-1" />
-                              <span>{equipment.location}</span>
-                            </div>
-                            <p><strong>Specs:</strong> {equipment.specifications}</p>
-                          </div>
                           <Button 
                             className="w-full mt-4" 
                             size="sm"
-                            onClick={() => handleRentEquipment(equipment)}
+                            onClick={() => navigate('/marketplace')}
                           >
-                            Rent Equipment
+                            <ShoppingCart className="h-4 w-4 mr-2" />
+                            Buy Now
                           </Button>
                         </CardContent>
                       </Card>

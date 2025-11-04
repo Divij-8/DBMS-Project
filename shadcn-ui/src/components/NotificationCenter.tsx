@@ -145,8 +145,26 @@ export const NotificationCenter = ({
     // TODO: Navigate to chat page with inquiry ID
   };
 
-  const handleDismiss = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const handleDismiss = async (id: string) => {
+    const notification = notifications.find(n => n.id === id);
+    if (!notification) return;
+
+    try {
+      // For inquiries, update status to 'closed' on backend
+      if (notification.type === 'inquiry') {
+        await apiService.patch(
+          `/product-inquiries/${notification.data.id}/update_status/`,
+          { status: 'closed' }
+        );
+      }
+      
+      // Remove from local state
+      setNotifications(notifications.filter(n => n.id !== id));
+    } catch (error) {
+      console.error('Error dismissing notification:', error);
+      // Still remove locally even if backend fails
+      setNotifications(notifications.filter(n => n.id !== id));
+    }
   };
 
   return (

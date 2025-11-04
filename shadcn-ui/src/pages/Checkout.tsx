@@ -10,6 +10,7 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, CreditCard, Truck, MapPin, Phone, User, CheckCircle } from 'lucide-react';
 import { useCart, CartItem } from '@/hooks/use-cart';
+import { apiService } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface CheckoutFormData {
@@ -67,35 +68,21 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      // Prepare order data
-      const orderData = {
-        customer: {
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          email: formData.email,
-          phone: formData.phone,
-        },
-        shippingAddress: {
-          address: formData.address,
-          city: formData.city,
-          state: formData.state,
-          pincode: formData.pincode,
-        },
-        deliveryInstructions: formData.deliveryInstructions,
-        paymentMethod: formData.paymentMethod,
-        items: items.map((item: CartItem) => ({
-          productId: item.product.id,
+      // Create orders for each product and send to backend
+      const orderPromises = items.map((item: CartItem) => {
+        const orderData = {
+          product: item.product.id,
           quantity: item.quantity,
-          price: item.product.price,
-        })),
-        totalAmount: totalPrice,
-      };
+          unit_price: item.product.price,
+          total_amount: item.product.price * item.quantity,
+          delivery_address: `${formData.address}, ${formData.city}, ${formData.state} ${formData.pincode}`,
+          special_instructions: formData.deliveryInstructions,
+        };
 
-      // TODO: Submit order to backend API
-      console.log('Order data:', orderData);
+        return apiService.post('/orders/', orderData);
+      });
 
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      const createdOrders = await Promise.all(orderPromises);
 
       // Clear cart and show success
       clearCart();
@@ -104,11 +91,12 @@ const Checkout = () => {
       // Navigate to order confirmation
       navigate('/order-confirmation', {
         state: {
-          orderData,
-          orderNumber: `ORD-${Date.now()}`
+          orders: createdOrders,
+          orderNumbers: createdOrders.map((o: any) => o.id),
+          totalAmount: totalPrice,
+          customerEmail: formData.email,
         }
       });
-
     } catch (error) {
       console.error('Checkout error:', error);
       toast.error('Failed to place order. Please try again.');

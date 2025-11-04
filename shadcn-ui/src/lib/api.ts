@@ -161,6 +161,52 @@ class ApiService {
     return this.post(`/equipment-rentals/${id}/complete_rental/`, {});
   }
 
+  // Orders endpoints
+  async getOrders(filters?: { status?: string; payment_status?: string }) {
+    let url = '/orders/';
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.payment_status) params.append('payment_status', filters.payment_status);
+    if (params.toString()) url += `?${params.toString()}`;
+    return this.get(url);
+  }
+
+  async getOrderById(id: string) {
+    return this.get(`/orders/${id}/`);
+  }
+
+  async createOrder(data: any) {
+    return this.post('/orders/', data);
+  }
+
+  async updateOrder(id: string, data: any) {
+    return this.put(`/orders/${id}/`, data);
+  }
+
+  async getMyPurchases() {
+    return this.get('/orders/my_purchases/');
+  }
+
+  async getMySales() {
+    return this.get('/orders/my_sales/');
+  }
+
+  async confirmOrder(id: string) {
+    return this.post(`/orders/${id}/confirm_order/`, {});
+  }
+
+  async cancelOrder(id: string) {
+    return this.post(`/orders/${id}/cancel_order/`, {});
+  }
+
+  async markOrderShipped(id: string) {
+    return this.post(`/orders/${id}/mark_shipped/`, {});
+  }
+
+  async markOrderDelivered(id: string) {
+    return this.post(`/orders/${id}/mark_delivered/`, {});
+  }
+
   // Farm data endpoints
   async getFarmData() {
     return this.get('/farm-data/');
