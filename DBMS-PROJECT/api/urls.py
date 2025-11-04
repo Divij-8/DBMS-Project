@@ -4,7 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework_simplejwt.views import TokenRefreshView
 from users.views import RegisterView, UserProfileView, current_user, CustomTokenObtainPairView
-from marketplace.views import ProductViewSet, EquipmentViewSet, EquipmentRentalViewSet
+from marketplace.views import ProductViewSet, EquipmentViewSet, EquipmentRentalViewSet, OrderViewSet
 from farm_data.views import FarmDataViewSet
 from alerts.views import AlertViewSet
 from .views import dashboard_stats
@@ -22,6 +22,7 @@ def api_root_view(request):
             'products': '/api/products/',
             'equipment': '/api/equipment/',
             'equipment-rentals': '/api/equipment-rentals/',
+            'orders': '/api/orders/',
             'farm-data': '/api/farm-data/',
             'alerts': '/api/alerts/',
             'dashboard': '/api/dashboard/stats/',
@@ -32,6 +33,7 @@ router = DefaultRouter()
 router.register(r'products', ProductViewSet, basename='product')
 router.register(r'equipment', EquipmentViewSet, basename='equipment')
 router.register(r'equipment-rentals', EquipmentRentalViewSet, basename='equipment-rental')
+router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'farm-data', FarmDataViewSet, basename='farm-data')
 router.register(r'alerts', AlertViewSet, basename='alert')
 
