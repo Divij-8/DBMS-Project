@@ -5,11 +5,12 @@ from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from datetime import datetime, timedelta
-from .models import Product, Equipment, EquipmentRental
+from .models import Product, Equipment, EquipmentRental, Order
 from .serializers import (
     ProductSerializer, ProductCreateSerializer,
     EquipmentSerializer, EquipmentCreateSerializer,
-    EquipmentRentalSerializer, EquipmentRentalCreateSerializer
+    EquipmentRentalSerializer, EquipmentRentalCreateSerializer,
+    OrderSerializer, OrderCreateSerializer
 )
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -233,4 +234,147 @@ class EquipmentRentalViewSet(viewsets.ModelViewSet):
         return Response({
             'message': 'Rental completed successfully',
             'rental': EquipmentRentalSerializer(rental).data
+        })
+
+
+class OrderViewSet(viewsets.ModelViewSet):
+    queryset = Order.objects.select_related('product', 'buyer', 'seller').all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'payment_status', 'buyer', 'seller']
+    search_fields = ['product__name', 'buyer__username', 'seller__username']
+    ordering = ['-created_at']
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return OrderCreateSerializer
+        return OrderSerializer
+    
+    def perform_create(self, serializer):
+        """Save order with current user as buyer and product seller as seller"""
+        product = serializer.validated_data['product']
+        serializer.save(buyer=self.request.user, seller=product.seller)
+    
+    def create(self, request, *args, **kwargs):
+        """Override create to add buyer-only validation"""
+        if request.user.role != 'buyer':
+            return Response(
+                {'error': 'Only buyers can place orders'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super().create(request, *args, **kwargs)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_purchases(self, request):
+        """Get all orders placed by the current buyer"""
+        orders = self.queryset.filter(buyer=request.user)
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_sales(self, request):
+        """Get all orders received by the current farmer/seller"""
+        orders = self.queryset.filter(seller=request.user)
+        serializer = OrderSerializer(orders, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def confirm_order(self, request, pk=None):
+        """Confirm an order (only seller can do this)"""
+        order = self.get_object()
+        
+        if order.seller != request.user:
+            return Response(
+                {'error': 'Only the seller can confirm orders'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if order.status != 'pending':
+            return Response(
+                {'error': f'Can only confirm pending orders. Current status: {order.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        order.status = 'confirmed'
+        order.save()
+        
+        return Response({
+            'message': 'Order confirmed successfully',
+            'order': OrderSerializer(order).data
+        })
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def cancel_order(self, request, pk=None):
+        """Cancel an order"""
+        order = self.get_object()
+        
+        # Either buyer or seller can cancel
+        if order.buyer != request.user and order.seller != request.user:
+            return Response(
+                {'error': 'You do not have permission to cancel this order'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if order.status in ['delivered', 'cancelled']:
+            return Response(
+                {'error': f'Cannot cancel a {order.status} order'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        order.status = 'cancelled'
+        order.save()
+        
+        return Response({
+            'message': 'Order cancelled successfully',
+            'order': OrderSerializer(order).data
+        })
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_shipped(self, request, pk=None):
+        """Mark order as shipped (only seller can do this)"""
+        order = self.get_object()
+        
+        if order.seller != request.user:
+            return Response(
+                {'error': 'Only the seller can mark orders as shipped'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if order.status != 'confirmed':
+            return Response(
+                {'error': f'Can only ship confirmed orders. Current status: {order.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        order.status = 'shipped'
+        order.save()
+        
+        return Response({
+            'message': 'Order marked as shipped',
+            'order': OrderSerializer(order).data
+        })
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_delivered(self, request, pk=None):
+        """Mark order as delivered (only buyer can do this)"""
+        order = self.get_object()
+        
+        if order.buyer != request.user:
+            return Response(
+                {'error': 'Only the buyer can mark orders as delivered'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        if order.status != 'shipped':
+            return Response(
+                {'error': f'Can only mark shipped orders as delivered. Current status: {order.status}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        order.status = 'delivered'
+        order.save()
+        
+        return Response({
+            'message': 'Order marked as delivered',
+            'order': OrderSerializer(order).data
         })
