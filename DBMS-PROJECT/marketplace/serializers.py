@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product, Equipment, EquipmentRental
+from .models import Product, Equipment, EquipmentRental, Order
 from users.serializers import UserSerializer
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -71,3 +71,23 @@ class EquipmentRentalCreateSerializer(serializers.ModelSerializer):
         if data['end_date'] <= data['start_date']:
             raise serializers.ValidationError('End date must be after start date')
         return data
+
+
+class OrderSerializer(serializers.ModelSerializer):
+    product_name = serializers.ReadOnlyField(source='product.name')
+    buyer_name = serializers.ReadOnlyField(source='buyer.username')
+    seller_name = serializers.ReadOnlyField(source='seller.username')
+    product_unit = serializers.ReadOnlyField(source='product.unit')
+    
+    class Meta:
+        model = Order
+        fields = ['id', 'product', 'product_name', 'product_unit', 'buyer', 'buyer_name', 'seller', 
+                  'seller_name', 'quantity', 'unit_price', 'total_amount', 'status', 'payment_status', 
+                  'delivery_address', 'special_instructions', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'product_name', 'buyer_name', 'seller_name', 'product_unit', 'created_at', 'updated_at']
+
+
+class OrderCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = ['product', 'quantity', 'unit_price', 'total_amount', 'delivery_address', 'special_instructions']
