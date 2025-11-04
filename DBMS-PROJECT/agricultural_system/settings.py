@@ -1,8 +1,21 @@
 from pathlib import Path
 from datetime import timedelta
-from decouple import config
-import dj_database_url
+from dotenv import load_dotenv
 import os
+
+try:
+    import dj_database_url
+except ImportError:
+    dj_database_url = None
+
+load_dotenv()
+
+def config(key, default=None, cast=None):
+    """Helper function to mimic decouple.config using os.getenv"""
+    value = os.getenv(key, default)
+    if cast and value is not None:
+        return cast(value)
+    return value
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -63,7 +76,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'agricultural_system.wsgi.application'
 
 # Database configuration
-if config('DATABASE_URL', default=None):
+if config('DATABASE_URL', default=None) and dj_database_url:
     DATABASES = {
         'default': dj_database_url.config(
             default=config('DATABASE_URL'),
