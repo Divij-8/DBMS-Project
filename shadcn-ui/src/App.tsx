@@ -11,6 +11,7 @@ import Dashboard from './pages/Dashboard';
 import Marketplace from './pages/Marketplace';
 import Equipment from './pages/Equipment';
 import Checkout from './pages/Checkout';
+import Orders from './pages/Orders.tsx';
 import OrderConfirmation from './pages/OrderConfirmation';
 import NotFound from './pages/NotFound';
 import { authService, User } from '@/lib/auth';
@@ -112,6 +113,16 @@ const App = () => {
                   element={
                     currentUser?.role === 'buyer' ? (
                       <Checkout />
+                    ) : (
+                      <Navigate to="/login" replace />
+                    )
+                  } 
+                />
+                <Route 
+                  path="/orders" 
+                  element={
+                    currentUser ? (
+                      <Orders user={currentUser} />
                     ) : (
                       <Navigate to="/login" replace />
                     )

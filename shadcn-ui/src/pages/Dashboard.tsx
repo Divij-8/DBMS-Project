@@ -64,6 +64,7 @@ const Dashboard = ({ user }: DashboardProps) => {
     description: '',
     pricePerDay: '',
     pricePerWeek: '',
+    pricePerMonth: '',
     location: '',
     condition: 'good' as 'excellent' | 'good' | 'fair',
     specifications: ''
@@ -93,13 +94,14 @@ const Dashboard = ({ user }: DashboardProps) => {
     const userProducts = storage.getProductsByFarmer(userId);
     const userFarms = storage.getFarmsByFarmer(userId);
     const userEquipments = storage.getEquipmentsByOwner(userId);
-    const userRentals = storage.getRentalsByRenter(userId);
+    const userRentalsAsRenter = storage.getRentalsByRenter(userId);
+    const userRentalsAsOwner = storage.getRentalsByOwner(userId);
     const userApplications = storage.getSchemeApplicationsByFarmer(userId);
     
     setProducts(userProducts);
     setFarms(userFarms);
     setEquipments(userEquipments);
-    setRentals(userRentals);
+    setRentals([...userRentalsAsRenter, ...userRentalsAsOwner]);
     setApplications(userApplications);
   };
 
@@ -195,6 +197,7 @@ const Dashboard = ({ user }: DashboardProps) => {
         description: equipmentForm.description,
         pricePerDay: parseFloat(equipmentForm.pricePerDay),
         pricePerWeek: parseFloat(equipmentForm.pricePerWeek),
+        pricePerMonth: equipmentForm.pricePerMonth ? parseFloat(equipmentForm.pricePerMonth) : 0,
         location: equipmentForm.location,
         availability: true,
         condition: equipmentForm.condition,
@@ -285,6 +288,7 @@ const Dashboard = ({ user }: DashboardProps) => {
       description: '',
       pricePerDay: '',
       pricePerWeek: '',
+      pricePerMonth: '',
       location: '',
       condition: 'good',
       specifications: ''
@@ -344,6 +348,7 @@ const Dashboard = ({ user }: DashboardProps) => {
       description: equipment.description,
       pricePerDay: equipment.pricePerDay.toString(),
       pricePerWeek: equipment.pricePerWeek.toString(),
+      pricePerMonth: (equipment.pricePerMonth || '').toString(),
       location: equipment.location,
       condition: equipment.condition,
       specifications: equipment.specifications
@@ -390,12 +395,24 @@ const Dashboard = ({ user }: DashboardProps) => {
     );
   }
 
+  const calculateTotalRevenue = () => {
+    const productRevenue = products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
+    // Only count rental revenue where current user is the owner (receiving income)
+    const rentalRevenue = rentals.reduce((sum, r) => {
+      if (currentUser && r.ownerId === String(currentUser.id)) {
+        return sum + (r.totalCost || 0);
+      }
+      return sum;
+    }, 0);
+    return productRevenue + rentalRevenue;
+  };
+
   const stats = currentUser.role === 'farmer' ? [
     { title: 'Total Products', value: products.length, icon: Package },
     { title: 'Total Farms', value: farms.length, icon: TrendingUp },
     { title: 'Equipment Listed', value: equipments.length, icon: Wrench },
     { title: 'Applications', value: applications.length, icon: FileText },
-    { title: 'Revenue', value: '₹' + (products.reduce((sum, p) => sum + (p.price * p.quantity), 0)).toFixed(2), icon: DollarSign }
+    { title: 'Total Revenue', value: '₹' + calculateTotalRevenue().toFixed(2), icon: DollarSign }
   ] : [
     { title: 'Available Products', value: products.length, icon: Package },
     { title: 'Available Equipment', value: equipments.length, icon: Wrench },

@@ -49,6 +49,7 @@ export interface User {
     description: string;
     pricePerDay: number;
     pricePerWeek: number;
+    pricePerMonth?: number;
     location: string;
     availability: boolean;
     condition: 'excellent' | 'good' | 'fair';
@@ -380,6 +381,10 @@ export interface User {
       return stored;
     }
   
+    getEquipmentById(id: string): Equipment | undefined {
+      return this.getEquipments().find(e => e.id === id);
+    }
+  
     getEquipmentsByOwner(ownerId: string): Equipment[] {
       return this.getEquipments().filter(e => e.ownerId === ownerId);
     }
@@ -414,17 +419,62 @@ export interface User {
         createdAt: new Date().toISOString()
       };
       rentals.push(newRental);
-      rentals.push(newRental);
       this.setItem('rentals', rentals);
       return newRental;
     }
   
     getRentalsByRenter(renterId: string): EquipmentRental[] {
-      return this.getItem<EquipmentRental>('rentals').filter(r => r.renterId === renterId);
+      const stored = this.getItem<EquipmentRental>('rentals');
+      if (stored.length === 0) {
+        // Initialize with demo rental data
+        const demoRentals: EquipmentRental[] = [
+          {
+            id: '1',
+            equipmentId: '2',
+            equipmentName: 'Combine Harvester',
+            renterId: '2',
+            renterName: 'Demo Buyer',
+            ownerId: '1',
+            ownerName: 'Demo Farmer',
+            startDate: '2025-10-11',
+            endDate: '2025-10-12',
+            totalDays: 30,
+            totalCost: 9000,
+            status: 'approved',
+            createdAt: '2024-01-01T00:00:00Z'
+          }
+        ];
+        this.setItem('rentals', demoRentals);
+        return demoRentals.filter(r => r.renterId === renterId);
+      }
+      return stored.filter(r => r.renterId === renterId);
     }
   
     getRentalsByOwner(ownerId: string): EquipmentRental[] {
-      return this.getItem<EquipmentRental>('rentals').filter(r => r.ownerId === ownerId);
+      const stored = this.getItem<EquipmentRental>('rentals');
+      if (stored.length === 0) {
+        // Initialize with demo rental data
+        const demoRentals: EquipmentRental[] = [
+          {
+            id: '1',
+            equipmentId: '2',
+            equipmentName: 'Combine Harvester',
+            renterId: '2',
+            renterName: 'Demo Buyer',
+            ownerId: '1',
+            ownerName: 'Demo Farmer',
+            startDate: '2025-10-11',
+            endDate: '2025-10-12',
+            totalDays: 30,
+            totalCost: 9000,
+            status: 'approved',
+            createdAt: '2024-01-01T00:00:00Z'
+          }
+        ];
+        this.setItem('rentals', demoRentals);
+        return demoRentals.filter(r => r.ownerId === ownerId);
+      }
+      return stored.filter(r => r.ownerId === ownerId);
     }
   
     updateRental(id: string, updates: Partial<EquipmentRental>): EquipmentRental | null {

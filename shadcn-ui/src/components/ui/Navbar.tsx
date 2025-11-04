@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { User, LogOut, Settings, Home, ShoppingCart, BarChart3, Wrench } from 'lucide-react';
+import { User, LogOut, Settings, Home, ShoppingCart, BarChart3, Wrench, Package } from 'lucide-react';
 import { authService, User as UserType } from '@/lib/auth';
 import { useCart } from '@/hooks/use-cart';
 import CartSidebar from '@/components/ui/CartSidebar';
@@ -86,6 +86,13 @@ const Navbar = ({ user, onAuthChange }: NavbarProps) => {
                   <Button variant="ghost" className="flex items-center space-x-2">
                     <BarChart3 className="w-4 h-4" />
                     <span>Dashboard</span>
+                  </Button>
+                </Link>
+
+                <Link to="/orders">
+                  <Button variant="ghost" className="flex items-center space-x-2 transition-all duration-300 hover:bg-blue-100 hover:text-blue-700 transform hover:scale-105">
+                    <Package className="w-4 h-4" />
+                    <span>Orders</span>
                   </Button>
                 </Link>
 
