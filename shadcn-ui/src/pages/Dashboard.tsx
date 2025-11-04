@@ -16,9 +16,10 @@ import { NotificationCenter } from '@/components/NotificationCenter';
 
 interface DashboardProps {
   user?: User | null;
+  refreshTrigger?: number;
 }
 
-const Dashboard = ({ user }: DashboardProps) => {
+const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
@@ -89,7 +90,7 @@ const Dashboard = ({ user }: DashboardProps) => {
       loadBuyerData();
     }
     loadSchemes();
-  }, [currentUser]);
+  }, [currentUser, refreshTrigger]);
 
   const loadFarmerData = () => {
     if (!currentUser) return;

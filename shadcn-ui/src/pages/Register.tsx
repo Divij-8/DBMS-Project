@@ -110,7 +110,7 @@ const Register = ({ onAuthChange }: RegisterProps) => {
         email: formData.email,
         password: formData.password,
         password2: formData.password2,
-        role: formData.role,
+        role: formData.role as 'farmer' | 'buyer',
       });
 
       if (result.success) {
