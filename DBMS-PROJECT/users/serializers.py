@@ -16,9 +16,31 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'email', 'password', 'password2', 'role']
     
+    def validate_username(self, value):
+        """Check if username already exists"""
+        if User.objects.filter(username=value).exists():
+            raise serializers.ValidationError("Username already exists. Please choose a different username.")
+        return value
+    
+    def validate_email(self, value):
+        """Check if email already exists"""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("Email already registered. Please use a different email or login.")
+        return value
+    
     def validate(self, attrs):
+        """Validate password matching and security"""
         if attrs['password'] != attrs['password2']:
             raise serializers.ValidationError({"password": "Passwords don't match."})
+        
+        # Additional password validation
+        password = attrs['password']
+        if len(password) < 8:
+            raise serializers.ValidationError({"password": "Password must be at least 8 characters long."})
+        
+        if password.lower() == attrs.get('username', '').lower():
+            raise serializers.ValidationError({"password": "Password cannot be the same as username."})
+        
         return attrs
     
     def create(self, validated_data):

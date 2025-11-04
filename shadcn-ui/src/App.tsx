@@ -4,12 +4,14 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Navbar from '@/components/ui/Navbar';
+import { NotificationCenter } from '@/components/NotificationCenter';
 import Index from './pages/Index';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
 import Marketplace from './pages/Marketplace';
 import Equipment from './pages/Equipment';
+import Chat from './pages/Chat';
 import Checkout from './pages/Checkout';
 import Orders from './pages/Orders.tsx';
 import OrderConfirmation from './pages/OrderConfirmation';
@@ -22,6 +24,7 @@ const queryClient = new QueryClient();
 const App = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     // Initialize auth service and check for existing session
@@ -49,6 +52,11 @@ const App = () => {
     setCurrentUser(user);
   };
 
+  const handleNotificationConfirmed = () => {
+    // Trigger dashboard refresh
+    setRefreshTrigger(prev => prev + 1);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-50">
@@ -65,6 +73,13 @@ const App = () => {
       <CartProvider>
         <TooltipProvider>
           <Toaster />
+          {currentUser?.role === 'farmer' && (
+            <NotificationCenter
+              userId={currentUser.id}
+              onOrderConfirmed={handleNotificationConfirmed}
+              onRentalConfirmed={handleNotificationConfirmed}
+            />
+          )}
           <BrowserRouter>
             <div className="min-h-screen bg-gray-50">
               <Navbar user={currentUser} onAuthChange={handleAuthChange} />
@@ -94,7 +109,7 @@ const App = () => {
                   path="/dashboard" 
                   element={
                     currentUser ? (
-                      <Dashboard user={currentUser} />
+                      <Dashboard user={currentUser} refreshTrigger={refreshTrigger} />
                     ) : (
                       <Navigate to="/login" replace />
                     )
@@ -107,6 +122,10 @@ const App = () => {
                 <Route 
                   path="/equipment" 
                   element={currentUser?.role === 'farmer' ? <Equipment user={currentUser} /> : <Navigate to="/marketplace" replace />} 
+                />
+                <Route 
+                  path="/chat" 
+                  element={currentUser?.role === 'farmer' ? <Chat user={currentUser} /> : <Navigate to="/marketplace" replace />} 
                 />
                 <Route 
                   path="/checkout" 

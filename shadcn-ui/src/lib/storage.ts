@@ -423,10 +423,12 @@ export interface User {
       return newRental;
     }
   
-    getRentalsByRenter(renterId: string): EquipmentRental[] {
+    getRentals(): EquipmentRental[] {
       const stored = this.getItem<EquipmentRental>('rentals');
       if (stored.length === 0) {
         // Initialize with demo rental data
+        // Note: Demo data uses ownerId '1' - if user has different ID, they won't see it
+        // In production, this would be loaded from a backend
         const demoRentals: EquipmentRental[] = [
           {
             id: '1',
@@ -445,36 +447,17 @@ export interface User {
           }
         ];
         this.setItem('rentals', demoRentals);
-        return demoRentals.filter(r => r.renterId === renterId);
+        return demoRentals;
       }
-      return stored.filter(r => r.renterId === renterId);
+      return stored;
+    }
+  
+    getRentalsByRenter(renterId: string): EquipmentRental[] {
+      return this.getRentals().filter(r => r.renterId === renterId);
     }
   
     getRentalsByOwner(ownerId: string): EquipmentRental[] {
-      const stored = this.getItem<EquipmentRental>('rentals');
-      if (stored.length === 0) {
-        // Initialize with demo rental data
-        const demoRentals: EquipmentRental[] = [
-          {
-            id: '1',
-            equipmentId: '2',
-            equipmentName: 'Combine Harvester',
-            renterId: '2',
-            renterName: 'Demo Buyer',
-            ownerId: '1',
-            ownerName: 'Demo Farmer',
-            startDate: '2025-10-11',
-            endDate: '2025-10-12',
-            totalDays: 30,
-            totalCost: 9000,
-            status: 'approved',
-            createdAt: '2024-01-01T00:00:00Z'
-          }
-        ];
-        this.setItem('rentals', demoRentals);
-        return demoRentals.filter(r => r.ownerId === ownerId);
-      }
-      return stored.filter(r => r.ownerId === ownerId);
+      return this.getRentals().filter(r => r.ownerId === ownerId);
     }
   
     updateRental(id: string, updates: Partial<EquipmentRental>): EquipmentRental | null {

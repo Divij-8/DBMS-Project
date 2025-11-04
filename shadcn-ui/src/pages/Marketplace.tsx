@@ -212,11 +212,23 @@ const Marketplace = ({ user }: MarketplaceProps) => {
 
   const handleSubmitContact = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedFarmerForContact) return;
+    
     try {
-      toast.success(`Message sent to ${selectedFarmerForContact?.farmer_name}! They will contact you soon.`);
+      // Create a product inquiry
+      const inquiryData = {
+        product: selectedFarmerForContact.id,
+        subject: contactForm.subject,
+        message: contactForm.message
+      };
+      
+      await apiService.post('/product-inquiries/', inquiryData);
+      
+      toast.success(`Inquiry sent to ${selectedFarmerForContact?.farmer_name}! They will respond soon.`);
       resetContactForm();
-    } catch (error) {
-      toast.error('Failed to send message');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to send inquiry');
+      console.error('Error sending inquiry:', error);
     }
   };
 

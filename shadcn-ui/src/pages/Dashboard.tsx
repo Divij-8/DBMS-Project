@@ -9,8 +9,10 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Edit2, Trash2, Package, TrendingUp, Users, DollarSign, Wrench, FileText, Calendar, MapPin, Phone } from 'lucide-react';
 import { storage, Product, Farm, Equipment, EquipmentRental, GovernmentScheme, SchemeApplication } from '@/lib/storage';
+import { apiService } from '@/lib/api';
 import { User } from '@/lib/auth';
 import { toast } from 'sonner';
+import { NotificationCenter } from '@/components/NotificationCenter';
 
 interface DashboardProps {
   user?: User | null;
@@ -20,7 +22,8 @@ const Dashboard = ({ user }: DashboardProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [farms, setFarms] = useState<Farm[]>([]);
   const [equipments, setEquipments] = useState<Equipment[]>([]);
-  const [rentals, setRentals] = useState<EquipmentRental[]>([]);
+  const [rentals, setRentals] = useState<any[]>([]);
+  const [orders, setOrders] = useState<any[]>([]);
   const [schemes, setSchemes] = useState<GovernmentScheme[]>([]);
   const [applications, setApplications] = useState<SchemeApplication[]>([]);
   
@@ -94,15 +97,40 @@ const Dashboard = ({ user }: DashboardProps) => {
     const userProducts = storage.getProductsByFarmer(userId);
     const userFarms = storage.getFarmsByFarmer(userId);
     const userEquipments = storage.getEquipmentsByOwner(userId);
-    const userRentalsAsRenter = storage.getRentalsByRenter(userId);
-    const userRentalsAsOwner = storage.getRentalsByOwner(userId);
     const userApplications = storage.getSchemeApplicationsByFarmer(userId);
     
     setProducts(userProducts);
     setFarms(userFarms);
     setEquipments(userEquipments);
-    setRentals([...userRentalsAsRenter, ...userRentalsAsOwner]);
     setApplications(userApplications);
+    
+    // Load from API
+    loadOrdersFromAPI();
+    loadRentalsFromAPI();
+  };
+
+  const loadOrdersFromAPI = async () => {
+    try {
+      const response = await apiService.get('/orders/my_sales/');
+      const allOrders = Array.isArray(response) ? response : (response?.results || []);
+      setOrders(allOrders);
+      console.log('Orders from API:', allOrders);
+    } catch (error) {
+      console.error('Failed to load orders from API:', error);
+      setOrders([]);
+    }
+  };
+
+  const loadRentalsFromAPI = async () => {
+    try {
+      const myEquipmentRentals = await apiService.getMyEquipmentRentals();
+      const allRentals = Array.isArray(myEquipmentRentals) ? myEquipmentRentals : [];
+      setRentals(allRentals);
+      console.log('Rentals from API:', allRentals);
+    } catch (error) {
+      console.error('Failed to load rentals from API:', error);
+      setRentals([]);
+    }
   };
 
   const loadBuyerData = () => {
@@ -384,6 +412,12 @@ const Dashboard = ({ user }: DashboardProps) => {
     setShowSchemeApplication(true);
   };
 
+  const handleNotificationConfirmed = () => {
+    // Refresh both orders and rentals when something is confirmed
+    loadOrdersFromAPI();
+    loadRentalsFromAPI();
+  };
+
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -395,16 +429,42 @@ const Dashboard = ({ user }: DashboardProps) => {
     );
   }
 
+  // Calculate total revenue from actual delivered orders and approved/active rentals
   const calculateTotalRevenue = () => {
-    const productRevenue = products.reduce((sum, p) => sum + (p.price * p.quantity), 0);
-    // Only count rental revenue where current user is the owner (receiving income)
-    const rentalRevenue = rentals.reduce((sum, r) => {
-      if (currentUser && r.ownerId === String(currentUser.id)) {
-        return sum + (r.totalCost || 0);
+    let totalRevenue = 0;
+
+    // Add revenue from delivered orders
+    const orderRevenue = orders.reduce((sum: number, order: any) => {
+      if (order.status === 'delivered' && order.payment_status === 'paid') {
+        return sum + parseFloat(String(order.total_amount || 0));
       }
       return sum;
     }, 0);
-    return productRevenue + rentalRevenue;
+
+    // Add revenue from confirmed/approved/completed rentals that are paid
+    const rentalRevenue = rentals.reduce((sum: number, rental: any) => {
+      console.log('Checking rental:', {
+        id: rental.id,
+        status: rental.status,
+        payment_status: rental.payment_status,
+        total_amount: rental.total_amount,
+        shouldCount: (rental.status === 'confirmed' || rental.status === 'completed' || rental.status === 'approved' || rental.status === 'active') && rental.payment_status === 'paid'
+      });
+      
+      if ((rental.status === 'confirmed' || rental.status === 'completed' || rental.status === 'approved' || rental.status === 'active') && 
+          rental.payment_status === 'paid') {
+        return sum + parseFloat(String(rental.total_amount || 0));
+      }
+      return sum;
+    }, 0);
+
+    totalRevenue = orderRevenue + rentalRevenue;
+    
+    console.log('=== REVENUE CALCULATION ===');
+    console.log('Orders:', orders);
+    console.log('Rentals:', rentals);
+    console.log('Order Revenue:', orderRevenue, 'Rental Revenue:', rentalRevenue, 'Total:', totalRevenue);
+    return totalRevenue;
   };
 
   const stats = currentUser.role === 'farmer' ? [

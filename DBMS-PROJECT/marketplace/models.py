@@ -176,3 +176,62 @@ class EquipmentRental(models.Model):
         # Ensure only farmers can rent equipment
         if self.renter.role != 'farmer':
             raise ValidationError('Only farmers can rent equipment')
+
+
+class ProductInquiry(models.Model):
+    """Inquiry from one farmer about another farmer's product or equipment"""
+    STATUS_CHOICES = [
+        ('open', 'Open'),
+        ('in_progress', 'In Progress'),
+        ('resolved', 'Resolved'),
+        ('closed', 'Closed'),
+    ]
+    
+    INQUIRY_TYPE_CHOICES = [
+        ('product', 'Product'),
+        ('equipment', 'Equipment'),
+    ]
+    
+    inquiry_type = models.CharField(max_length=20, choices=INQUIRY_TYPE_CHOICES, default='product')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='inquiries', blank=True, null=True)
+    equipment = models.ForeignKey(Equipment, on_delete=models.CASCADE, related_name='inquiries', blank=True, null=True)
+    inquirer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inquiries_sent')
+    seller = models.ForeignKey(User, on_delete=models.CASCADE, related_name='inquiries_received')
+    subject = models.CharField(max_length=255)
+    message = models.TextField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='open')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        db_table = 'product_inquiries'
+        ordering = ['-created_at']
+        unique_together = ('product', 'inquirer', 'equipment')
+    
+    def __str__(self):
+        item_name = self.product.name if self.product else self.equipment.name
+        return f"Inquiry: {self.subject} - {self.inquirer.username} to {self.seller.username} ({item_name})"
+    
+    def clean(self):
+        # Ensure either product or equipment is provided, but not both
+        if not self.product and not self.equipment:
+            raise ValidationError('Either product or equipment must be specified')
+        if self.product and self.equipment:
+            raise ValidationError('Cannot inquire about both product and equipment at the same time')
+
+
+class Message(models.Model):
+    """Chat messages between farmers regarding product inquiries"""
+    inquiry = models.ForeignKey(ProductInquiry, on_delete=models.CASCADE, related_name='messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='received_messages')
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        db_table = 'messages'
+        ordering = ['created_at']
+    
+    def __str__(self):
+        return f"Message from {self.sender.username} to {self.recipient.username}"

@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Badge } from '@/components/ui/badge';
-import { User, LogOut, Settings, Home, ShoppingCart, BarChart3, Wrench, Package } from 'lucide-react';
+import { User, LogOut, Settings, Home, ShoppingCart, BarChart3, Wrench, Package, MessageCircle } from 'lucide-react';
 import { authService, User as UserType } from '@/lib/auth';
 import { useCart } from '@/hooks/use-cart';
 import CartSidebar from '@/components/ui/CartSidebar';
@@ -55,12 +55,20 @@ const Navbar = ({ user, onAuthChange }: NavbarProps) => {
             )}
 
             {!isAuthPage && user?.role === 'farmer' && (
-              <Link to="/equipment">
-                <Button variant="ghost" className="flex items-center space-x-2 transition-all duration-300 hover:bg-orange-100 hover:text-orange-700 transform hover:scale-105">
-                  <Wrench className="w-4 h-4" />
-                  <span>Equipment</span>
-                </Button>
-              </Link>
+              <>
+                <Link to="/equipment">
+                  <Button variant="ghost" className="flex items-center space-x-2 transition-all duration-300 hover:bg-orange-100 hover:text-orange-700 transform hover:scale-105">
+                    <Wrench className="w-4 h-4" />
+                    <span>Equipment</span>
+                  </Button>
+                </Link>
+                <Link to="/chat">
+                  <Button variant="ghost" className="flex items-center space-x-2 transition-all duration-300 hover:bg-blue-100 hover:text-blue-700 transform hover:scale-105">
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Chat</span>
+                  </Button>
+                </Link>
+              </>
             )}
 
             {user?.role === 'buyer' && (

@@ -1,16 +1,18 @@
-from rest_framework import viewsets, filters, status
+from rest_framework import viewsets, filters, status, serializers
 from rest_framework.permissions import IsAuthenticatedOrReadOnly, IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Q
 from datetime import datetime, timedelta
-from .models import Product, Equipment, EquipmentRental, Order
+from .models import Product, Equipment, EquipmentRental, Order, ProductInquiry, Message
 from .serializers import (
     ProductSerializer, ProductCreateSerializer,
     EquipmentSerializer, EquipmentCreateSerializer,
     EquipmentRentalSerializer, EquipmentRentalCreateSerializer,
-    OrderSerializer, OrderCreateSerializer
+    OrderSerializer, OrderCreateSerializer,
+    ProductInquirySerializer, ProductInquiryCreateSerializer,
+    MessageSerializer, MessageCreateSerializer
 )
 
 class ProductViewSet(viewsets.ModelViewSet):
@@ -171,6 +173,7 @@ class EquipmentRentalViewSet(viewsets.ModelViewSet):
             )
         
         rental.status = 'confirmed'
+        rental.payment_status = 'paid'  # Mark payment as paid when confirmed
         rental.save()
         
         return Response({
@@ -377,4 +380,140 @@ class OrderViewSet(viewsets.ModelViewSet):
         return Response({
             'message': 'Order marked as delivered',
             'order': OrderSerializer(order).data
+        })
+
+
+class ProductInquiryViewSet(viewsets.ModelViewSet):
+    queryset = ProductInquiry.objects.select_related('product', 'inquirer', 'seller').all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'product', 'inquirer', 'seller']
+    search_fields = ['subject', 'message']
+    ordering = ['-created_at']
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return ProductInquiryCreateSerializer
+        return ProductInquirySerializer
+    
+    def perform_create(self, serializer):
+        """Save inquiry with current user as inquirer"""
+        # Ensure only farmers can create inquiries
+        if self.request.user.role != 'farmer':
+            raise serializers.ValidationError("Only farmers can inquire about products or equipment")
+        
+        inquiry_type = serializer.validated_data.get('inquiry_type')
+        product = serializer.validated_data.get('product')
+        equipment = serializer.validated_data.get('equipment')
+        
+        # Determine seller based on inquiry type
+        if inquiry_type == 'product' and product:
+            seller = product.seller
+            if seller == self.request.user:
+                raise serializers.ValidationError("You cannot inquire about your own products")
+        elif inquiry_type == 'equipment' and equipment:
+            seller = equipment.owner
+            if seller == self.request.user:
+                raise serializers.ValidationError("You cannot inquire about your own equipment")
+        else:
+            raise serializers.ValidationError("Invalid inquiry type or missing item")
+        
+        serializer.save(inquirer=self.request.user, seller=seller)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_inquiries_sent(self, request):
+        """Get all inquiries sent by the current user"""
+        inquiries = self.queryset.filter(inquirer=request.user)
+        serializer = ProductInquirySerializer(inquiries, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_inquiries_received(self, request):
+        """Get all inquiries received by the current user (for their products)"""
+        inquiries = self.queryset.filter(seller=request.user)
+        serializer = ProductInquirySerializer(inquiries, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['patch'], permission_classes=[IsAuthenticated])
+    def update_status(self, request, pk=None):
+        """Update inquiry status"""
+        inquiry = self.get_object()
+        
+        if inquiry.seller != request.user and inquiry.inquirer != request.user:
+            return Response(
+                {'error': 'You do not have permission to update this inquiry'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        new_status = request.data.get('status')
+        if new_status not in dict(ProductInquiry.STATUS_CHOICES):
+            return Response(
+                {'error': f'Invalid status. Choose from: {[choice[0] for choice in ProductInquiry.STATUS_CHOICES]}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        inquiry.status = new_status
+        inquiry.save()
+        
+        return Response({
+            'message': f'Inquiry status updated to {new_status}',
+            'inquiry': ProductInquirySerializer(inquiry).data
+        })
+
+
+class MessageViewSet(viewsets.ModelViewSet):
+    queryset = Message.objects.select_related('inquiry', 'sender', 'recipient').all()
+    permission_classes = [IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['inquiry', 'sender', 'recipient']
+    ordering = ['created_at']
+    
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return MessageCreateSerializer
+        return MessageSerializer
+    
+    def perform_create(self, serializer):
+        """Save message with current user as sender"""
+        inquiry = serializer.validated_data['inquiry']
+        
+        # Verify user is part of this conversation
+        if self.request.user != inquiry.inquirer and self.request.user != inquiry.seller:
+            raise serializers.ValidationError("You are not part of this conversation")
+        
+        # Determine recipient
+        if self.request.user == inquiry.inquirer:
+            recipient = inquiry.seller
+        else:
+            recipient = inquiry.inquirer
+        
+        serializer.save(sender=self.request.user, recipient=recipient)
+    
+    @action(detail=False, methods=['get'], permission_classes=[IsAuthenticated])
+    def my_conversations(self, request):
+        """Get all unique conversations for the current user"""
+        # Get all inquiries where user is inquirer or seller
+        inquiries = ProductInquiry.objects.filter(
+            Q(inquirer=request.user) | Q(seller=request.user)
+        )
+        serializer = ProductInquirySerializer(inquiries, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def mark_as_read(self, request, pk=None):
+        """Mark a message as read"""
+        message = self.get_object()
+        
+        if message.recipient != request.user:
+            return Response(
+                {'error': 'You cannot mark messages from other users as read'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        message.is_read = True
+        message.save()
+        
+        return Response({
+            'message': 'Message marked as read',
+            'message_obj': MessageSerializer(message).data
         })

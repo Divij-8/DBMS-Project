@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Sprout, Leaf, Tractor, Droplet, Wind, Sun } from 'lucide-react';
+import { X } from 'lucide-react';
 import { authService } from '@/lib/auth';
 import { toast } from 'sonner';
 
@@ -18,7 +18,25 @@ const Login = ({ onAuthChange }: LoginProps) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [savedUsernames, setSavedUsernames] = useState<string[]>([]);
   const navigate = useNavigate();
+
+  // Load saved usernames on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('savedUsernames');
+    if (saved) {
+      try {
+        const usernames = JSON.parse(saved);
+        setSavedUsernames(usernames);
+        // Auto-fill the most recently used username
+        if (usernames.length > 0) {
+          setUsername(usernames[0]);
+        }
+      } catch (e) {
+        console.error('Failed to parse saved usernames:', e);
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,6 +46,12 @@ const Login = ({ onAuthChange }: LoginProps) => {
     try {
       const result = await authService.login(username, password);
       if (result.success) {
+        // Save username to browser storage for auto-fill next time
+        const currentSaved = savedUsernames.filter(u => u !== username);
+        const updated = [username, ...currentSaved].slice(0, 5); // Keep last 5 usernames
+        localStorage.setItem('savedUsernames', JSON.stringify(updated));
+        setSavedUsernames(updated);
+
         toast.success('Login successful!');
         onAuthChange();
         navigate('/dashboard');
@@ -41,15 +65,18 @@ const Login = ({ onAuthChange }: LoginProps) => {
     }
   };
 
-  const fillDemoCredentials = (user: 'farmer' | 'buyer' | 'admin') => {
-    const credentials = {
-      farmer: { username: 'farmer_test', password: 'TestPassword123!' },
-      buyer: { username: 'buyer_test', password: 'TestPassword123!' },
-      admin: { username: 'admin_test', password: 'AdminPassword123!' },
-    };
-    const creds = credentials[user];
-    setUsername(creds.username);
-    setPassword(creds.password);
+  const removeSavedUsername = (usernameToRemove: string) => {
+    const updated = savedUsernames.filter(u => u !== usernameToRemove);
+    localStorage.setItem('savedUsernames', JSON.stringify(updated));
+    setSavedUsernames(updated);
+    if (username === usernameToRemove) {
+      setUsername('');
+    }
+  };
+
+  const useSavedUsername = (savedUsername: string) => {
+    setUsername(savedUsername);
+    setPassword('');
   };
 
   return (
@@ -75,7 +102,6 @@ const Login = ({ onAuthChange }: LoginProps) => {
             Access your agricultural management dashboard
           </p>
         </div>
-
         <Card>
           <CardHeader>
             <CardTitle>Welcome Back</CardTitle>
@@ -83,7 +109,6 @@ const Login = ({ onAuthChange }: LoginProps) => {
               Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
-
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {error && (
@@ -91,7 +116,6 @@ const Login = ({ onAuthChange }: LoginProps) => {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-
               <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
@@ -102,8 +126,35 @@ const Login = ({ onAuthChange }: LoginProps) => {
                   placeholder="Enter your username"
                   required
                 />
+                {/* Saved usernames dropdown */}
+                {savedUsernames.length > 0 && (
+                  <div className="mt-2 space-y-1 bg-gray-50 p-2 rounded border border-gray-200">
+                    <p className="text-xs font-semibold text-gray-600 px-2">Recently used:</p>
+                    {savedUsernames.map((savedUsername) => (
+                      <div
+                        key={savedUsername}
+                        className="flex items-center justify-between px-2 py-1 rounded hover:bg-gray-100 group"
+                      >
+                        <button
+                          type="button"
+                          onClick={() => useSavedUsername(savedUsername)}
+                          className="flex-1 text-left text-sm text-gray-700 hover:text-green-600 font-medium"
+                        >
+                          {savedUsername}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeSavedUsername(savedUsername)}
+                          className="text-gray-400 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity p-1"
+                          title="Remove this username"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
                 <Input
@@ -115,50 +166,10 @@ const Login = ({ onAuthChange }: LoginProps) => {
                   required
                 />
               </div>
-
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
-
-            <div className="mt-6">
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-300" />
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white text-gray-500">Demo Accounts</span>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full text-sm"
-                  onClick={() => fillDemoCredentials('farmer')}
-                >
-                  👨‍🌾 Farmer Demo
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full text-sm"
-                  onClick={() => fillDemoCredentials('buyer')}
-                >
-                  👩‍💼 Buyer Demo
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full text-sm"
-                  onClick={() => fillDemoCredentials('admin')}
-                >
-                  🔐 Admin Demo
-                </Button>
-              </div>
-            </div>
-
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 Don't have an account?{' '}

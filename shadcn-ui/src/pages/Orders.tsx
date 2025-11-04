@@ -210,11 +210,11 @@ const Orders = ({ user }: OrdersProps) => {
           </div>
           <div>
             <p className="text-sm text-gray-600">Unit Price</p>
-            <p className="font-semibold">₹{order.unit_price.toFixed(2)}</p>
+            <p className="font-semibold">₹{parseFloat(String(order.unit_price)).toFixed(2)}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Total Amount</p>
-            <p className="font-semibold text-lg text-green-600">₹{order.total_amount.toFixed(2)}</p>
+            <p className="font-semibold text-lg text-green-600">₹{parseFloat(String(order.total_amount)).toFixed(2)}</p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Order Date</p>
