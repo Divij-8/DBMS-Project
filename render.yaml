@@ -3,8 +3,8 @@ services:
     name: arms-backend
     env: python
     plan: free
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn agricultural_system.wsgi:application
+    buildCommand: cd DBMS-PROJECT && pip install -r requirements.txt
+    startCommand: cd DBMS-PROJECT && gunicorn agricultural_system.wsgi:application
     envVars:
       - key: DEBUG
         value: "False"
