@@ -4,7 +4,7 @@ services:
     env: python
     plan: free
     buildCommand: cd DBMS-PROJECT && pip install -r requirements.txt
-    startCommand: gunicorn agricultural_system.wsgi:application
+    startCommand: PYTHONPATH=/opt/render/project/src/DBMS-PROJECT gunicorn agricultural_system.wsgi:application
     envVars:
       - key: DEBUG
         value: "False"
@@ -12,8 +12,6 @@ services:
         value: "arms-backend.onrender.com"
       - key: CORS_ALLOWED_ORIGINS
         value: "https://arms-frontend.onrender.com"
-      - key: PYTHONPATH
-        value: "/opt/render/project/src/DBMS-PROJECT"
     
   - type: web
     name: arms-frontend
