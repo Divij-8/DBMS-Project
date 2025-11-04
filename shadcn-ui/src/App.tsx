@@ -48,8 +48,13 @@ const App = () => {
   }, []);
 
   const handleAuthChange = async () => {
-    const user = await authService.getCurrentUser();
-    setCurrentUser(user);
+    if (authService.isAuthenticated()) {
+      const user = await authService.getCurrentUser();
+      setCurrentUser(user);
+    } else {
+      // User logged out
+      setCurrentUser(null);
+    }
   };
 
   const handleNotificationConfirmed = () => {
