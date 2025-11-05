@@ -121,8 +121,3 @@ For integration details, see [README_INTEGRATION.md](README_INTEGRATION.md) and 
   - `alerts/`: Alerts system app.
   - `api/`: API endpoints.
 - `shadcn-ui/`: React frontend application.
-
-
-## Support
-
-For questions or issues, refer to the [SETUP_GUIDE.md](SETUP_GUIDE.md) or open an issue in the repository.
