@@ -217,6 +217,7 @@ const Marketplace = ({ user }: MarketplaceProps) => {
     try {
       // Create a product inquiry
       const inquiryData = {
+        inquiry_type: 'product',
         product: selectedFarmerForContact.id,
         subject: contactForm.subject,
         message: contactForm.message
