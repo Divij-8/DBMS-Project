@@ -299,6 +299,7 @@ class OrderViewSet(viewsets.ModelViewSet):
             )
         
         order.status = 'confirmed'
+        order.payment_status = 'paid'  # Mark payment as paid when order is confirmed
         order.save()
         
         return Response({
