@@ -442,9 +442,9 @@ const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
   const calculateTotalRevenue = () => {
     let totalRevenue = 0;
 
-    // Add revenue from delivered orders
+    // Add revenue from delivered or confirmed orders
     const orderRevenue = orders.reduce((sum: number, order: any) => {
-      if (order.status === 'delivered' && order.payment_status === 'paid') {
+      if ((order.status === 'delivered' || order.status === 'confirmed') && order.payment_status === 'paid') {
         return sum + parseFloat(String(order.total_amount || 0));
       }
       return sum;
