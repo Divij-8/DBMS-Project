@@ -85,6 +85,8 @@ const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
     additionalInfo: ''
   });
 
+  const [refreshTriggerState, setRefreshTrigger] = useState(0);
+
   useEffect(() => {
     if (currentUser?.role === 'farmer') {
       loadFarmerData();
@@ -92,7 +94,7 @@ const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
       loadBuyerData();
     }
     loadSchemes();
-  }, [currentUser, refreshTrigger]);
+  }, [currentUser, refreshTrigger, refreshTriggerState]);
 
   const loadFarmerData = () => {
     if (!currentUser) return;
@@ -425,6 +427,8 @@ const Dashboard = ({ user, refreshTrigger }: DashboardProps) => {
     // Refresh both orders and rentals when something is confirmed
     loadOrdersFromAPI();
     loadRentalsFromAPI();
+    // Force a re-render by incrementing the refresh trigger
+    setRefreshTrigger(prev => prev + 1);
   };
 
   if (!currentUser) {
